@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from torchvision.utils import make_grid
 from base import BaseGANTrainer
 from utils import inf_loop, MetricTracker
 from torch.autograd import Variable
