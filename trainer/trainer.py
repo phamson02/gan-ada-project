@@ -10,12 +10,11 @@ class GANTrainer(BaseGANTrainer):
     Trainer class
     """
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
+                 data_loader, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
-        self.augment = augment
         if len_epoch is None:
             # epoch-based training
             self.len_epoch = len(self.data_loader)
@@ -43,22 +42,18 @@ class GANTrainer(BaseGANTrainer):
         for batch_idx, (real_imgs, _) in enumerate(self.data_loader):
             real_imgs = real_imgs.to(self.device)
 
-            # Sample noise as generator input
-            z = torch.randn(real_imgs.size(0), self.model.generator.latent_dim).to(self.device)
-            # Generate a batch of images
-            gen_imgs = self.model.generator(z)
-
-            # Augment real and generated images
-            real_imgs = self.augment(real_imgs)
-            gen_imgs = self.augment(gen_imgs)
-
-
             # -----TRAIN GENERATOR-----
             # Adversarial ground truths
             valid = torch.ones(real_imgs.size(0), 1).to(self.device)
             fake = torch.zeros(real_imgs.size(0), 1).to(self.device)
 
             self.optimizer_G.zero_grad()
+
+            # Sample noise as generator input
+            z = torch.randn(real_imgs.size(0), self.model.generator.latent_dim).to(self.device)
+
+            # Generate a batch of images
+            gen_imgs = self.model.generator(z)
 
             # Loss measures generator's ability to fool the discriminator
             g_loss = self.criterion(self.model.discriminator(gen_imgs), valid)

@@ -62,12 +62,5 @@
     "save_dir": "saved/generated",
     "n_sample": 1000,
     "batch_size": 8
-  },
-  "augment": {
-    "type": "DiffAugment",
-    "args": {
-      "policy": "color,translation",
-      "channels_first": true
-    }
   }
 }
