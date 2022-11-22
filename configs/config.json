@@ -12,17 +12,19 @@
     "type": "MnistDataLoader",
     "args": {
       "data_dir": "data/",
-      "batch_size": 128,
+      "batch_size": 32,
       "shuffle": true,
       "num_workers": 2
     }
   },
+
   "optimizer_G": {
     "type": "Adam",
     "args": {
       "lr": 0.001,
       "weight_decay": 0,
       "amsgrad": true
+
     }
   },
   "optimizer_D": {
@@ -31,6 +33,7 @@
       "lr": 0.001,
       "weight_decay": 0,
       "amsgrad": true
+
     }
   },
   "loss": "adversarial_loss",
@@ -50,7 +53,7 @@
     }
   },
   "trainer": {
-    "type": "GANTrainer",
+    "type": "WGANGPTrainer",
 
     "epochs": 100,
 
