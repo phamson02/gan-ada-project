@@ -149,6 +149,8 @@ Config files are in `.json` format:
     }
   },
   "trainer": {
+    "type": "GANTrainer",              // trainer class
+
     "epochs": 100,                     // number of training epochs
     "save_dir": "saved/",              // checkpoints are saved in save_dir/models/name
     "save_period": 1,                  // save checkpoints every save_period epochs

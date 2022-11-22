@@ -44,7 +44,7 @@ class TensorboardWriter():
             self.timer = datetime.now()
         else:
             duration = datetime.now() - self.timer
-            self.add_scalar('steps_per_sec', 1 / duration.total_seconds())
+            self.add_scalar('steps_per_sec', 1 / (duration.total_seconds()+1e6))
             self.timer = datetime.now()
 
     def __getattr__(self, name):

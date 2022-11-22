@@ -1,13 +1,12 @@
 import argparse
-import collections
 import torch
 import numpy as np
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.models as module_arch
+import trainer as module_trainer
 from parse_config import ConfigParser
-from trainer import GANTrainer
 from utils import prepare_device
 
 
@@ -46,7 +45,7 @@ def main(config: ConfigParser):
     lr_scheduler_G = config.init_obj('lr_scheduler_G', torch.optim.lr_scheduler, optimizer_G)
     lr_scheduler_D = config.init_obj('lr_scheduler_D', torch.optim.lr_scheduler, optimizer_D)
 
-    trainer = GANTrainer(model, criterion, metrics, optimizer_G, optimizer_D,
+    trainer = getattr(module_trainer, config['trainer']['type'])(model, criterion, metrics, optimizer_G, optimizer_D,
                       config=config,
                       device=device,
                       data_loader=data_loader,
