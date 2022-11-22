@@ -50,6 +50,8 @@
     }
   },
   "trainer": {
+    "type": "GANTrainer",
+
     "epochs": 100,
 
     "save_dir": "saved/",
