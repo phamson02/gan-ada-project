@@ -4,6 +4,7 @@ from base import BaseGANTrainer
 from utils import inf_loop, MetricTracker
 from torch.autograd import Variable
 import torch.autograd as autograd
+from torchvision.utils import make_grid
 
 
 class GANTrainer(BaseGANTrainer):
@@ -80,8 +81,7 @@ class GANTrainer(BaseGANTrainer):
             self.optimizer_D.step()
 
             # Update p value based on prediction of discriminator on real images
-            if self.augment.name is "ADA":
-                print('Use Ada augmentation')
+            if self.augment.name == "ADA":
                 self.augment.update_p(real_logits)
 
             # Log loss
@@ -207,7 +207,8 @@ class WGANTrainer(BaseGANTrainer):
             self.optimizer_D.zero_grad()
 
             # Measure discriminator's ability to classify real from generated samples
-            real_loss = self.criterion(self.model.discriminator(real_imgs), valid)
+            real_logits = self.model.discriminator(real_imgs)
+            real_loss = self.criterion(real_logits, valid)
             fake_loss = self.criterion(self.model.discriminator(gen_imgs.detach()), fake)
             d_loss = (real_loss + fake_loss) / 2
 
@@ -216,6 +217,10 @@ class WGANTrainer(BaseGANTrainer):
 
             for p in self.model.discriminator.parameters():
                 p.data.clamp_(-0.01, 0.01)
+
+            # Update p value based on prediction of discriminator on real images
+            if self.augment.name == "ADA":
+                self.augment.update_p(real_logits)
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -367,12 +372,18 @@ class WGANGPTrainer(BaseGANTrainer):
             self.optimizer_D.zero_grad()
             gradient_penalty = self.compute_gradient_penalty(self.model.discriminator, real_imgs.data, gen_imgs.data)
             # Measure discriminator's ability to classify real from generated samples
-            real_loss = torch.mean(self.model.discriminator(real_imgs))
+            real_logits = self.model.discriminator(real_imgs)
+
+            real_loss = torch.mean(real_logits)
             fake_loss = torch.mean(self.model.discriminator(gen_imgs.detach()))
             d_loss = (- real_loss + fake_loss) / 2 + self.lamba_gp * gradient_penalty
 
             d_loss.backward()
             self.optimizer_D.step()
+
+            # Update p value based on prediction of discriminator on real images
+            if self.augment.name == "ADA":
+                self.augment.update_p(real_logits)
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
