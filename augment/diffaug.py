@@ -3,8 +3,10 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 
+
 class DiffAugment(nn.Module):
     def __init__(self, policy='', channels_first=True):
+        super(DiffAugment, self).__init__()
         self.policy = policy
         self.channels_first = channels_first
 
@@ -71,8 +73,9 @@ def rand_cutout(x, ratio=0.5):
     return x
 
 
+# Differentiable augmentation
 AUGMENT_FNS = {
-    'color': [rand_brightness, rand_saturation, rand_contrast],
-    'translation': [rand_translation],
-    'cutout': [rand_cutout],
-}
+        'color': [rand_brightness, rand_saturation, rand_contrast],
+        'translation': [rand_translation],
+        'cutout': [rand_cutout],
+    }

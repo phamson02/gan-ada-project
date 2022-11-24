@@ -1,1 +1,1 @@
-from .diffaugment import *
+from .diffaug import *

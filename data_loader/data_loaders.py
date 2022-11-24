@@ -15,4 +15,4 @@ class MnistDataLoader(BaseDataLoader):
         ])
         self.data_dir = data_dir
         self.dataset = datasets.MNIST(self.data_dir, train=training, download=True, transform=trsfm)
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, pin_memory, drop_last)
+        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, pin_memory=pin_memory, drop_last=drop_last)

@@ -50,7 +50,7 @@ class GANTrainer(BaseGANTrainer):
             gen_imgs = self.model.generator(z)
 
             # Augment real and generated images
-            if not self.augment:
+            if self.augment is not None:
                 real_imgs = self.augment(real_imgs)
                 gen_imgs = self.augment(gen_imgs)
 
@@ -141,7 +141,7 @@ class WGANTrainer(BaseGANTrainer):
     Trainer class
     """
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
-                 data_loader, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
+                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
@@ -158,6 +158,7 @@ class WGANTrainer(BaseGANTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
         self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.augment = augment
 
     def _train_epoch(self, epoch):
         """
@@ -185,6 +186,11 @@ class WGANTrainer(BaseGANTrainer):
 
             # Generate a batch of images
             gen_imgs = self.model.generator(z)
+
+            # augment real and generated images
+            if self.augment is not None:
+                real_imgs = self.augment(real_imgs)
+                gen_imgs = self.augment(gen_imgs)
 
             # Loss measures generator's ability to fool the discriminator
             g_loss = self.criterion(self.model.discriminator(gen_imgs), valid)
@@ -260,12 +266,13 @@ class WGANTrainer(BaseGANTrainer):
             current = batch_idx
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
+
 class WGANGPTrainer(BaseGANTrainer):
     """
     Trainer class
     """
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
-                 data_loader, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp = 10):
+                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp = 10):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
@@ -281,6 +288,7 @@ class WGANGPTrainer(BaseGANTrainer):
         self.lr_scheduler_D = lr_scheduler_D
         self.log_step = int(np.sqrt(data_loader.batch_size))
         self.lamba_gp = lambda_gp
+        self.augment = augment
         self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
     def compute_gradient_penalty(self, D, real_samples, fake_samples):
@@ -339,6 +347,11 @@ class WGANGPTrainer(BaseGANTrainer):
 
             # Generate a batch of images
             gen_imgs = self.model.generator(z)
+
+            if self.augment is not None:
+                real_imgs = self.augment(real_imgs)
+                gen_imgs = self.augment(gen_imgs)
+
             # Loss measures generator's ability to fool the discriminator
             g_loss = -torch.mean(self.model.discriminator(gen_imgs))
 
