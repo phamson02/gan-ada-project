@@ -10,7 +10,7 @@ class GANTrainer(BaseGANTrainer):
     Trainer class
     """
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
+                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
@@ -45,13 +45,13 @@ class GANTrainer(BaseGANTrainer):
 
             # Sample noise as generator input
             z = torch.randn(real_imgs.size(0), self.model.generator.latent_dim).to(self.device)
-
             # Generate a batch of images
             gen_imgs = self.model.generator(z)
 
             # Augment real and generated images
             real_imgs = self.augment(real_imgs)
             gen_imgs = self.augment(gen_imgs)
+
 
             # -----TRAIN GENERATOR-----
             # Adversarial ground truths

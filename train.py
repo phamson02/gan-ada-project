@@ -48,16 +48,16 @@ def main(config: ConfigParser):
     lr_scheduler_G = config.init_obj('lr_scheduler_G', torch.optim.lr_scheduler, optimizer_G)
     lr_scheduler_D = config.init_obj('lr_scheduler_D', torch.optim.lr_scheduler, optimizer_D)
 
-    # choose augment option
+    # select augment options
     augment = config.init_obj('augment', module_augment)
 
     trainer = GANTrainer(model, criterion, metrics, optimizer_G, optimizer_D,
-                      config=config,
-                      device=device,
-                      data_loader=data_loader,
-                      augment=augment,
-                      lr_scheduler_G=lr_scheduler_G,
-                      lr_scheduler_D=lr_scheduler_D)
+                         config=config,
+                         device=device,
+                         data_loader=data_loader,
+                         augment=augment,
+                         lr_scheduler_G=lr_scheduler_G,
+                         lr_scheduler_D=lr_scheduler_D)
 
     trainer.train()
 
