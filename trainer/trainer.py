@@ -54,7 +54,6 @@ class GANTrainer(BaseGANTrainer):
                 real_imgs = self.augment(real_imgs)
                 gen_imgs = self.augment(gen_imgs)
 
-
             # -----TRAIN GENERATOR-----
             # Adversarial ground truths
             valid = torch.ones(real_imgs.size(0), 1).to(self.device)
@@ -72,14 +71,18 @@ class GANTrainer(BaseGANTrainer):
             self.optimizer_D.zero_grad()
 
             # Measure discriminator's ability to classify real from generated samples
-            real_loss = self.criterion(self.model.discriminator(real_imgs), valid)
+            real_logits = self.model.discriminator(real_imgs)
+            real_loss = self.criterion(real_logits, valid)
             fake_loss = self.criterion(self.model.discriminator(gen_imgs.detach()), fake)
             d_loss = (real_loss + fake_loss) / 2
 
             d_loss.backward()
             self.optimizer_D.step()
 
-
+            # Update p value based on prediction of discriminator on real images
+            if self.augment.name is "ADA":
+                print('Use Ada augmentation')
+                self.augment.update_p(real_logits)
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -98,6 +101,8 @@ class GANTrainer(BaseGANTrainer):
 
             if batch_idx == self.len_epoch:
                 break
+
+
         log = self.train_metrics.result()
 
         self._valid_epoch(epoch)

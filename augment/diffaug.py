@@ -1,43 +1,35 @@
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
+import augment.base_augment as BAug
 
 
+class DiffAugment(BAug.AugmentPipe):
+    '''
+    The paper suggest that
+     - Cutout size should be half of image, Color: (Brightness in (-0.5, 0.5), Contrast in (0.5, 1.5), Saturation in (0, 2)),
+       translation in (-1/8, 1/8)
+     - They also experiment contributions of rotate90 {-90, 0, 90}, Gaussian noise (std=0.1), Geometry transformations:
+       (Bilinear translation (-0.25, 0.25), bilinear scaling (0.75, 1.25), bilinear rotation (-30, 30), bilinear shearing (-0.25, 0.25)
+     - Combination of Translation + Color + Cutout bring the best result.
+    '''
 
-class DiffAugment(nn.Module):
-    def __init__(self, policy='', channels_first=True):
-        super(DiffAugment, self).__init__()
-        self.policy = policy
-        self.channels_first = channels_first
+    def __init__(self, brightness=0, saturation=0, contrast=0, brightness_std=0.2, contrast_std=0.5, saturation_std=1,
+                 cutout=0, cutout_size=0.5,
+                 translation=0, translation_ratio=0.125,
+                 ):
+        super(DiffAugment, self).__init__(xflip=0, rotate90=0, xint=0,
+                                          scale=0, rotate=0, aniso=0, xfrac=0,
+                                          lumaflip=0, hue=0,
+                                          imgfilter=0, noise=0
+                                          )
+        self.translation = float(translation)
+        self.translation_ratio = float(translation_ratio)
+        self.name = "DiffAugment"
 
-    def forward(self, x):
-        if self.policy:
-            if not self.channels_first:
-                x = x.permute(0, 3, 1, 2)
-            for p in self.policy.split(','):
-                for f in AUGMENT_FNS[p]:
-                    x = f(x)
-            if not self.channels_first:
-                x = x.permute(0, 2, 3, 1)
-            x = x.contiguous()
-        return x
-
-
-def rand_brightness(x):
-    x = x + (torch.rand(x.size(0), 1, 1, 1, dtype=x.dtype, device=x.device) - 0.5)
-    return x
-
-
-def rand_saturation(x):
-    x_mean = x.mean(dim=1, keepdim=True)
-    x = (x - x_mean) * (torch.rand(x.size(0), 1, 1, 1, dtype=x.dtype, device=x.device) * 2) + x_mean
-    return x
-
-
-def rand_contrast(x):
-    x_mean = x.mean(dim=[1, 2, 3], keepdim=True)
-    x = (x - x_mean) * (torch.rand(x.size(0), 1, 1, 1, dtype=x.dtype, device=x.device) + 0.5) + x_mean
-    return x
+    def forward(self, images, debug_percentile=None):
+        if self.translation > 0:
+            images = rand_translation(images, ratio=self.translation_ratio)
+        return super(DiffAugment, self).forward(images, debug_percentile)
 
 
 def rand_translation(x, ratio=0.125):
@@ -55,27 +47,3 @@ def rand_translation(x, ratio=0.125):
     x = x_pad.permute(0, 2, 3, 1).contiguous()[grid_batch, grid_x, grid_y].permute(0, 3, 1, 2)
     return x
 
-
-def rand_cutout(x, ratio=0.5):
-    cutout_size = int(x.size(2) * ratio + 0.5), int(x.size(3) * ratio + 0.5)
-    offset_x = torch.randint(0, x.size(2) + (1 - cutout_size[0] % 2), size=[x.size(0), 1, 1], device=x.device)
-    offset_y = torch.randint(0, x.size(3) + (1 - cutout_size[1] % 2), size=[x.size(0), 1, 1], device=x.device)
-    grid_batch, grid_x, grid_y = torch.meshgrid(
-        torch.arange(x.size(0), dtype=torch.long, device=x.device),
-        torch.arange(cutout_size[0], dtype=torch.long, device=x.device),
-        torch.arange(cutout_size[1], dtype=torch.long, device=x.device),
-    )
-    grid_x = torch.clamp(grid_x + offset_x - cutout_size[0] // 2, min=0, max=x.size(2) - 1)
-    grid_y = torch.clamp(grid_y + offset_y - cutout_size[1] // 2, min=0, max=x.size(3) - 1)
-    mask = torch.ones(x.size(0), x.size(2), x.size(3), dtype=x.dtype, device=x.device)
-    mask[grid_batch, grid_x, grid_y] = 0
-    x = x * mask.unsqueeze(1)
-    return x
-
-
-# Differentiable augmentation
-AUGMENT_FNS = {
-        'color': [rand_brightness, rand_saturation, rand_contrast],
-        'translation': [rand_translation],
-        'cutout': [rand_cutout],
-    }
