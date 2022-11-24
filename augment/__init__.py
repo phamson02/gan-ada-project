@@ -1,1 +1,1 @@
-from .diffaug import DiffAugment
+from .diffaugment import *

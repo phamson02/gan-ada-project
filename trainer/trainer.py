@@ -50,8 +50,9 @@ class GANTrainer(BaseGANTrainer):
             gen_imgs = self.model.generator(z)
 
             # Augment real and generated images
-            real_imgs = self.augment(real_imgs)
-            gen_imgs = self.augment(gen_imgs)
+            if not self.augment:
+                real_imgs = self.augment(real_imgs)
+                gen_imgs = self.augment(gen_imgs)
 
 
             # -----TRAIN GENERATOR-----
