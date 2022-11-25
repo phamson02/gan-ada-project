@@ -4,7 +4,6 @@ from base import BaseGANTrainer
 from utils import inf_loop, MetricTracker
 from torch.autograd import Variable
 import torch.autograd as autograd
-from torchvision.utils import make_grid
 
 
 class GANTrainer(BaseGANTrainer):
@@ -81,7 +80,7 @@ class GANTrainer(BaseGANTrainer):
             self.optimizer_D.step()
 
             # Update p value based on prediction of discriminator on real images
-            if self.augment.name == "ADA":
+            if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_p(real_logits)
 
             # Log loss
@@ -89,15 +88,11 @@ class GANTrainer(BaseGANTrainer):
             self.train_metrics.update('g_loss', g_loss.item())
             self.train_metrics.update('d_loss', d_loss.item())
 
-            # for met in self.metric_ftns:
-            #     self.train_metrics.update(met.__name__, met(output, target))
-
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
                     g_loss.item(), d_loss.item()))
-                # self.writer.add_image('input', make_grid(real_imgs.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
@@ -112,35 +107,6 @@ class GANTrainer(BaseGANTrainer):
         if self.lr_scheduler_D is not None:
             self.lr_scheduler_D.step()
         return log
-
-    def _valid_epoch(self, epoch):
-        """
-        Validate after training an epoch
-
-        :param epoch: Integer, current training epoch.
-        """
-        self.model.generator.eval()
-        with torch.no_grad():
-            noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
-            fake_imgs = self.model.generator(noise)
-            self.writer.set_step(epoch, 'valid')
-            self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
-
-        # Add 32 real images to tensorboard
-        real_imgs, _ = next(iter(self.data_loader))
-        self.writer.set_step(epoch, 'valid')
-        self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
-
-    def _progress(self, batch_idx):
-        base = '[{}/{} ({:.0f}%)]'
-        if hasattr(self.data_loader, 'n_samples'):
-            current = batch_idx * self.data_loader.batch_size
-            total = self.data_loader.n_samples
-        else:
-            current = batch_idx
-            total = self.len_epoch
-        return base.format(current, total, 100.0 * current / total)
-
 class WGANTrainer(BaseGANTrainer):
     """
     Trainer class
@@ -219,7 +185,7 @@ class WGANTrainer(BaseGANTrainer):
                 p.data.clamp_(-0.01, 0.01)
 
             # Update p value based on prediction of discriminator on real images
-            if self.augment.name == "ADA":
+            if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_p(real_logits)
 
             # Log loss
@@ -227,15 +193,11 @@ class WGANTrainer(BaseGANTrainer):
             self.train_metrics.update('g_loss', g_loss.item())
             self.train_metrics.update('d_loss', d_loss.item())
 
-            # for met in self.metric_ftns:
-            #     self.train_metrics.update(met.__name__, met(output, target))
-
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
                     g_loss.item(), d_loss.item()))
-                # self.writer.add_image('input', make_grid(real_imgs.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
@@ -248,34 +210,6 @@ class WGANTrainer(BaseGANTrainer):
         if self.lr_scheduler_D is not None:
             self.lr_scheduler_D.step()
         return log
-
-    def _valid_epoch(self, epoch):
-        """
-        Validate after training an epoch
-
-        :param epoch: Integer, current training epoch.
-        """
-        self.model.generator.eval()
-        with torch.no_grad():
-            noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
-            fake_imgs = self.model.generator(noise)
-            self.writer.set_step(epoch, 'valid')
-            self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
-
-        # Add 32 real images to tensorboard
-        real_imgs, _ = next(iter(self.data_loader))
-        self.writer.set_step(epoch, 'valid')
-        self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
-
-    def _progress(self, batch_idx):
-        base = '[{}/{} ({:.0f}%)]'
-        if hasattr(self.data_loader, 'n_samples'):
-            current = batch_idx * self.data_loader.batch_size
-            total = self.data_loader.n_samples
-        else:
-            current = batch_idx
-            total = self.len_epoch
-        return base.format(current, total, 100.0 * current / total)
 
 class WGANGPTrainer(BaseGANTrainer):
     """
@@ -382,7 +316,7 @@ class WGANGPTrainer(BaseGANTrainer):
             self.optimizer_D.step()
 
             # Update p value based on prediction of discriminator on real images
-            if self.augment.name == "ADA":
+            if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_p(real_logits)
 
             # Log loss
@@ -390,15 +324,11 @@ class WGANGPTrainer(BaseGANTrainer):
             self.train_metrics.update('g_loss', g_loss.item())
             self.train_metrics.update('d_loss', d_loss.item())
 
-            # for met in self.metric_ftns:
-            #     self.train_metrics.update(met.__name__, met(output, target))
-
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
                     g_loss.item(), d_loss.item()))
-                # self.writer.add_image('input', make_grid(real_imgs.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
@@ -411,31 +341,3 @@ class WGANGPTrainer(BaseGANTrainer):
         if self.lr_scheduler_D is not None:
             self.lr_scheduler_D.step()
         return log
-
-    def _valid_epoch(self, epoch):
-        """
-        Validate after training an epoch
-
-        :param epoch: Integer, current training epoch.
-        """
-        self.model.generator.eval()
-        with torch.no_grad():
-            noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
-            fake_imgs = self.model.generator(noise)
-            self.writer.set_step(epoch, 'valid')
-            self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
-
-        # Add 32 real images to tensorboard
-        real_imgs, _ = next(iter(self.data_loader))
-        self.writer.set_step(epoch, 'valid')
-        self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
-
-    def _progress(self, batch_idx):
-        base = '[{}/{} ({:.0f}%)]'
-        if hasattr(self.data_loader, 'n_samples'):
-            current = batch_idx * self.data_loader.batch_size
-            total = self.data_loader.n_samples
-        else:
-            current = batch_idx
-            total = self.len_epoch
-        return base.format(current, total, 100.0 * current / total)
