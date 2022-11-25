@@ -24,7 +24,6 @@
       "lr": 0.001,
       "weight_decay": 0,
       "amsgrad": true
-
     }
   },
   "optimizer_D": {
@@ -33,7 +32,6 @@
       "lr": 0.001,
       "weight_decay": 0,
       "amsgrad": true
-
     }
   },
   "loss": "adversarial_loss",
@@ -68,15 +66,5 @@
     "n_sample": 1000,
     "batch_size": 8
   },
-  "augment": {
-    "type": "Ada",
-    "args": {
-      "ada_target": 0.85,
-      "integration_steps": 1000,
-      "saturation": 1,
-      "brightness": 1,
-      "contrast": 1,
-      "cutout": 1
-    }
-  }
+  "augment": {}
 }
