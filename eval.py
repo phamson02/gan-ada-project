@@ -67,7 +67,7 @@ def main(config: ConfigParser):
                     vutils.save_image(g_img.add(1).mul(0.5), 
                         os.path.join(config['eval']['save_dir'], '%d.png'%(i*config['eval']['batch_size']+j)))#, normalize=True, range=(-1,1))
         
-        fid_value = calculate_fid_given_paths(ckpt, batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
+        fid_value = calculate_fid_given_paths((config['eval']['save_dir'], config.cs), batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
         
         with open(f"{model_name}.csv") as f:
             writer = csv.writer(f)
