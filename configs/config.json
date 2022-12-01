@@ -1,15 +1,15 @@
 {
-  "name": "Mnist_GAN",
+  "name": "GAN",
   "n_gpu": 1,
 
   "arch": {
-    "type": "GAN",
+    "type": "SNGAN",
     "args": {
       "latent_dim": 100
     }
   },
   "data_loader": {
-    "type": "MnistDataLoader",
+    "type": "Cifar10DataLoader",
     "args": {
       "data_dir": "data/",
       "batch_size": 32,
