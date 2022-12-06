@@ -26,7 +26,7 @@ class CelebA64DataLoader(BaseDataLoader):
                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                         ])
         self.data_dir = data_dir
-        self.dataset = CelebA64(self.data_dir, transforms=trsfm, train_portion=train_portion)
+        self.dataset = CelebA64(self.data_dir, transform=trsfm, train_portion=train_portion)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, pin_memory=pin_memory, drop_last=drop_last)
 
 class Cifar10DataLoader(BaseDataLoader):
