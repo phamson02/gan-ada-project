@@ -27,10 +27,10 @@ class GANTrainer(BaseGANTrainer):
         self.lr_scheduler_G = lr_scheduler_G
         self.lr_scheduler_D = lr_scheduler_D
         self.log_step = int(np.sqrt(data_loader.batch_size))
-        self.valid = torch.ones(config["data_loader"]["batch_size"], 1).to(self.device)
-        self.fake = torch.zeros(config["data_loader"]["batch_size"], 1).to(self.device)
+        self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
+        self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
     
     def _sample_noise(self, batch_size):
         return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
