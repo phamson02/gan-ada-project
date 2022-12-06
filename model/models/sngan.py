@@ -132,7 +132,7 @@ class Discriminator(nn.Module):
         n_downsamples = int(np.log2(img_shape[-1]//16))
         self.downsamples = nn.Sequential(*[ResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE, stride=2) for _ in range(n_downsamples)])
         self.model = nn.Sequential(
-                FirstResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE, stride=2),
+                FirstResBlockDiscriminator(self.out_channels, self.DISC_SIZE, stride=2),
                 self.downsamples,
                 ResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE),
                 ResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE),
