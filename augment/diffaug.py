@@ -20,7 +20,10 @@ class DiffAugment(BAug.AugmentPipe):
         super(DiffAugment, self).__init__(xflip=0, rotate90=0, xint=0,
                                           scale=0, rotate=0, aniso=0, xfrac=0,
                                           lumaflip=0, hue=0,
-                                          imgfilter=0, noise=0
+                                          imgfilter=0, noise=0,
+                                          brightness=brightness, saturation=saturation, contrast=contrast,
+                                          brightness_std=brightness_std, saturation_std=saturation_std, contrast_std=contrast_std,
+                                          cutout=cutout, cutout_size=cutout_size,
                                           )
         self.translation = float(translation)
         self.translation_ratio = float(translation_ratio)

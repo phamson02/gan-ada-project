@@ -69,14 +69,13 @@
     "batch_size": 8
   },
   "augment": {
-    "type": "Ada",
+    "type": "DiffAugment",
     "args": {
-      "ada_target": 0.85,
-      "integration_steps": 1000,
       "saturation": 1,
       "brightness": 1,
       "contrast": 1,
-      "cutout": 1
+      "cutout": 1,
+      "translation": 1
     }
   }
 }
