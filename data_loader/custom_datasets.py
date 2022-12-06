@@ -9,7 +9,7 @@ class CelebA64(Dataset):
     def __init__(self, data_dir, transform, train_portion=0.9):
         self.data_dir = data_dir
         self.transform = transform
-        self.img_paths = glob.glob(os.path.join(self.data_dir, "*.png"))
+        self.img_paths = glob.glob(os.path.join(self.data_dir, "*.jpg"))
         self.len = np.floor(len(self.img_paths)*train_portion).astype(int)
         self.img_paths = self.img_paths[:self.len]
 
