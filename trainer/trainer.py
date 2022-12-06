@@ -136,7 +136,7 @@ class GANTrainer(BaseGANTrainer):
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
-                    g_loss.item(), d_loss.item()))
+                    g_loss, d_loss))
 
             if batch_idx == self.len_epoch:
                 break
