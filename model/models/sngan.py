@@ -6,8 +6,6 @@ from .spec_norm import SpectralNorm
 import numpy as np
 
 
-channels = 3
-
 class ResBlockGenerator(nn.Module):
 
     def __init__(self, in_channels, out_channels, stride=1):
@@ -15,8 +13,8 @@ class ResBlockGenerator(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-        nn.init.xavier_uniform(self.conv1.weight.data, 1.)
-        nn.init.xavier_uniform(self.conv2.weight.data, 1.)
+        nn.init.xavier_uniform_(self.conv1.weight.data, 1.)
+        nn.init.xavier_uniform_(self.conv2.weight.data, 1.)
 
         self.model = nn.Sequential(
             nn.BatchNorm2d(in_channels),
@@ -42,8 +40,8 @@ class ResBlockDiscriminator(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-        nn.init.xavier_uniform(self.conv1.weight.data, 1.)
-        nn.init.xavier_uniform(self.conv2.weight.data, 1.)
+        nn.init.xavier_uniform_(self.conv1.weight.data, 1.)
+        nn.init.xavier_uniform_(self.conv2.weight.data, 1.)
 
         if stride == 1:
             self.model = nn.Sequential(
@@ -64,20 +62,12 @@ class ResBlockDiscriminator(nn.Module):
         if stride != 1:
 
             self.bypass_conv = nn.Conv2d(in_channels,out_channels, 1, 1, padding=0)
-            nn.init.xavier_uniform(self.bypass_conv.weight.data, np.sqrt(2))
+            nn.init.xavier_uniform_(self.bypass_conv.weight.data, np.sqrt(2))
 
             self.bypass = nn.Sequential(
                 SpectralNorm(self.bypass_conv),
                 nn.AvgPool2d(2, stride=stride, padding=0)
             )
-            # if in_channels == out_channels:
-            #     self.bypass = nn.AvgPool2d(2, stride=stride, padding=0)
-            # else:
-            #     self.bypass = nn.Sequential(
-            #         SpectralNorm(nn.Conv2d(in_channels,out_channels, 1, 1, padding=0)),
-            #         nn.AvgPool2d(2, stride=stride, padding=0)
-            #     )
-
 
     def forward(self, x):
         return self.model(x) + self.bypass(x)
@@ -91,9 +81,9 @@ class FirstResBlockDiscriminator(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
         self.bypass_conv = nn.Conv2d(in_channels, out_channels, 1, 1, padding=0)
-        nn.init.xavier_uniform(self.conv1.weight.data, 1.)
-        nn.init.xavier_uniform(self.conv2.weight.data, 1.)
-        nn.init.xavier_uniform(self.bypass_conv.weight.data, np.sqrt(2))
+        nn.init.xavier_uniform_(self.conv1.weight.data, 1.)
+        nn.init.xavier_uniform_(self.conv2.weight.data, 1.)
+        nn.init.xavier_uniform_(self.bypass_conv.weight.data, np.sqrt(2))
 
         # we don't want to apply ReLU activation to raw image before convolution transformation.
         self.model = nn.Sequential(
@@ -113,44 +103,49 @@ class FirstResBlockDiscriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self, latent_dim, img_shape):
         super(Generator, self).__init__()
+        self.GEN_SIZE = 128
         self.latent_dim = latent_dim
-        self.img_size = img_shape[1]
+        self.out_channels = img_shape[0]
+        n_upsamples = int(np.log2(img_shape[-1]//4))
 
-        self.dense = nn.Linear(self.latent_dim, 4 * 4 * self.img_size)
-        self.final = nn.Conv2d(self.img_size, channels, 3, stride=1, padding=1)
-        nn.init.xavier_uniform(self.dense.weight.data, 1.)
-        nn.init.xavier_uniform(self.final.weight.data, 1.)
-
+        self.dense = nn.Linear(self.latent_dim, 4 * 4 * self.GEN_SIZE)
+        self.final = nn.Conv2d(self.GEN_SIZE, self.out_channels, 3, stride=1, padding=1)
+        nn.init.xavier_uniform_(self.dense.weight.data, 1.)
+        nn.init.xavier_uniform_(self.final.weight.data, 1.)
+        
+        self.upsamples = nn.Sequential(*[ResBlockGenerator(self.GEN_SIZE, self.GEN_SIZE, stride=2) for _ in range(n_upsamples)])
         self.model = nn.Sequential(
-            ResBlockGenerator(self.img_size, self.img_size, stride=2),
-            ResBlockGenerator(self.img_size, self.img_size, stride=2),
-            ResBlockGenerator(self.img_size, self.img_size, stride=2),
-            nn.BatchNorm2d(self.img_size),
+            self.upsamples,
+            nn.BatchNorm2d(self.GEN_SIZE),
             nn.ReLU(),
             self.final,
             nn.Tanh())
 
     def forward(self, z):
-        return self.model(self.dense(z).view(-1, self.img_size, 4, 4))
+        return self.model(self.dense(z).view(-1, self.GEN_SIZE, 4, 4))
 
 class Discriminator(nn.Module):
     def __init__(self, img_shape):
         super(Discriminator, self).__init__()
-        self.img_size = img_shape[1]
+        self.DISC_SIZE = 128
+        self.out_channels = img_shape[0]
+        n_downsamples = int(np.log2(img_shape[-1]//16))
+        self.downsamples = nn.Sequential(*[ResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE, stride=2) for _ in range(n_downsamples)])
         self.model = nn.Sequential(
-                FirstResBlockDiscriminator(channels, self.img_size, stride=2),
-                ResBlockDiscriminator(self.img_size, self.img_size, stride=2),
-                ResBlockDiscriminator(self.img_size, self.img_size),
-                ResBlockDiscriminator(self.img_size, self.img_size),
+                FirstResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE, stride=2),
+                self.downsamples,
+                ResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE),
+                ResBlockDiscriminator(self.DISC_SIZE, self.DISC_SIZE),
                 nn.ReLU(),
                 nn.AvgPool2d(8),
             )
-        self.fc = nn.Linear(self.img_size, 1)
-        nn.init.xavier_uniform(self.fc.weight.data, 1.)
+        self.fc = nn.Linear(self.DISC_SIZE, 1)
+        nn.init.xavier_uniform_(self.fc.weight.data, 1.)
         self.fc = SpectralNorm(self.fc)
 
     def forward(self, x):
-        return self.fc(self.model(x).view(-1,self.img_size))
+        return self.fc(self.model(x).view(-1, self.DISC_SIZE))
+
 class SNGAN64(BaseGAN):
     def __init__(self, latent_dim):
         self.latent_dim = latent_dim

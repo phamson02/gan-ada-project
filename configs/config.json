@@ -9,7 +9,7 @@
     }
   },
   "data_loader": {
-    "type": "Cifar10DataLoader",
+    "type": "CelebA64DataLoader",
     "args": {
       "data_dir": "data/",
       "batch_size": 32,
