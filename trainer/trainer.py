@@ -4,7 +4,7 @@ from base import BaseGANTrainer
 from utils import inf_loop, MetricTracker
 from torch.autograd import Variable
 import torch.autograd as autograd
-
+import torch.nn as nn
 
 class GANTrainer(BaseGANTrainer):
     """
@@ -27,8 +27,81 @@ class GANTrainer(BaseGANTrainer):
         self.lr_scheduler_G = lr_scheduler_G
         self.lr_scheduler_D = lr_scheduler_D
         self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.valid = torch.ones(config["dataloader"]["batch_size"], 1).to(self.device)
+        self.fake = torch.zeros(config["dataloader"]["batch_size"], 1).to(self.device)
 
         self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+    
+    def _sample_noise(self, batch_size):
+        return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
+    
+    def gen_loss(self, gen_imgs):
+        disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
+        
+        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
+        
+        g_loss = self.criterion(disc_out, self.valid[:self.current_batch_size])
+
+        return g_loss
+    
+    def d_fake_loss(self, gen_imgs):
+        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+        
+        d_fake_loss = self.criterion(d_out_fake, self.fake[:self.current_batch_size])
+
+        return d_fake_loss, d_out_fake
+    
+    def d_real_loss(self, real_imgs):
+        d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
+
+        d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
+    
+        return d_real_loss, d_out_real
+
+    def _train_D(self, real_imgs):
+        """Function for training D, returning current loss and D's probability predictions on real samples"""
+        self.optimizer_D.zero_grad()
+        # Sample noise as generator input
+        z = self._sample_noise(self.current_batch_size)
+        # Generate a batch of images
+                
+        gen_imgs = self.model.generator(z)
+        
+        # Augment real and generated images
+        if self.augment is not None:
+            real_imgs = self.augment(real_imgs)
+            gen_imgs = self.augment(gen_imgs)
+
+        # Measure discriminator's ability to classify real from generated samples
+        d_real_loss, d_out_real = self.d_real_loss(real_imgs)
+
+        d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
+        
+        d_loss = d_real_loss + d_fake_loss
+
+        d_loss.backward()
+
+        self.optimizer_D.step()
+
+        ###LOG
+        self.train_metrics.update('D(x)', 0.5*torch.mean(nn.Sigmoid()(d_out_real)) + \
+                                            0.5*torch.mean(1-nn.Sigmoid()(d_out_fake)))
+        return d_loss.item(), nn.Sigmoid()(d_out_real.detach())
+    
+    def _train_G(self):
+        self.optimizer_G.zero_grad()
+        z = self._sample_noise(self.current_batch_size)
+        
+        gen_imgs = self.model.generator(z)
+        # Augment generated images
+        if self.augment is not None:
+            gen_imgs = self.augment(gen_imgs)
+
+        g_loss = self.gen_loss(gen_imgs)
+        g_loss.backward()
+        
+        self.optimizer_G.step()
+        return g_loss.item()
 
     def _train_epoch(self, epoch):
         """
@@ -43,41 +116,12 @@ class GANTrainer(BaseGANTrainer):
         
         for batch_idx, (real_imgs, _) in enumerate(self.data_loader):
             real_imgs = real_imgs.to(self.device)
-
-            # Sample noise as generator input
-            z = torch.randn(real_imgs.size(0), self.model.generator.latent_dim).to(self.device)
-            # Generate a batch of images
-            gen_imgs = self.model.generator(z)
-
-            # Augment real and generated images
-            if self.augment is not None:
-                real_imgs = self.augment(real_imgs)
-                gen_imgs = self.augment(gen_imgs)
-
+            self.current_batch_size = real_imgs.shape[0]
             # -----TRAIN GENERATOR-----
-            # Adversarial ground truths
-            valid = torch.ones(real_imgs.size(0), 1).to(self.device)
-            fake = torch.zeros(real_imgs.size(0), 1).to(self.device)
-
-            self.optimizer_G.zero_grad()
-
-            # Loss measures generator's ability to fool the discriminator
-            g_loss = self.criterion(self.model.discriminator(gen_imgs), valid)
-
-            g_loss.backward()
-            self.optimizer_G.step()
+            d_loss = self._train_G()
 
             # -----TRAIN DISCRIMINATOR-----
-            self.optimizer_D.zero_grad()
-
-            # Measure discriminator's ability to classify real from generated samples
-            real_logits = self.model.discriminator(real_imgs)
-            real_loss = self.criterion(real_logits, valid)
-            fake_loss = self.criterion(self.model.discriminator(gen_imgs.detach()), fake)
-            d_loss = (real_loss + fake_loss) / 2
-
-            d_loss.backward()
-            self.optimizer_D.step()
+            g_loss, real_logits = self._train_D(real_imgs=real_imgs)
 
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
@@ -85,8 +129,8 @@ class GANTrainer(BaseGANTrainer):
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-            self.train_metrics.update('g_loss', g_loss.item())
-            self.train_metrics.update('d_loss', d_loss.item())
+            self.train_metrics.update('g_loss', g_loss)
+            self.train_metrics.update('d_loss', d_loss)
 
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
@@ -107,6 +151,7 @@ class GANTrainer(BaseGANTrainer):
         if self.lr_scheduler_D is not None:
             self.lr_scheduler_D.step()
         return log
+
 class WGANTrainer(BaseGANTrainer):
     """
     Trainer class

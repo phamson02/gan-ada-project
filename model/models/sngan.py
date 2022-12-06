@@ -2,7 +2,7 @@
 from torch import nn
 import torch.nn.functional as F
 from base import BaseGAN
-from .spec_norm import SpectralNorm
+from torch.nn.utils import spectral_norm
 import numpy as np
 
 
@@ -46,16 +46,16 @@ class ResBlockDiscriminator(nn.Module):
         if stride == 1:
             self.model = nn.Sequential(
                 nn.ReLU(),
-                SpectralNorm(self.conv1),
+                spectral_norm(self.conv1),
                 nn.ReLU(),
-                SpectralNorm(self.conv2)
+                spectral_norm(self.conv2)
                 )
         else:
             self.model = nn.Sequential(
                 nn.ReLU(),
-                SpectralNorm(self.conv1),
+                spectral_norm(self.conv1),
                 nn.ReLU(),
-                SpectralNorm(self.conv2),
+                spectral_norm(self.conv2),
                 nn.AvgPool2d(2, stride=stride, padding=0)
                 )
         self.bypass = nn.Sequential()
@@ -65,7 +65,7 @@ class ResBlockDiscriminator(nn.Module):
             nn.init.xavier_uniform_(self.bypass_conv.weight.data, np.sqrt(2))
 
             self.bypass = nn.Sequential(
-                SpectralNorm(self.bypass_conv),
+                spectral_norm(self.bypass_conv),
                 nn.AvgPool2d(2, stride=stride, padding=0)
             )
 
@@ -87,14 +87,14 @@ class FirstResBlockDiscriminator(nn.Module):
 
         # we don't want to apply ReLU activation to raw image before convolution transformation.
         self.model = nn.Sequential(
-            SpectralNorm(self.conv1),
+            spectral_norm(self.conv1),
             nn.ReLU(),
-            SpectralNorm(self.conv2),
+            spectral_norm(self.conv2),
             nn.AvgPool2d(2)
             )
         self.bypass = nn.Sequential(
             nn.AvgPool2d(2),
-            SpectralNorm(self.bypass_conv),
+            spectral_norm(self.bypass_conv),
         )
 
     def forward(self, x):
@@ -141,7 +141,7 @@ class Discriminator(nn.Module):
             )
         self.fc = nn.Linear(self.DISC_SIZE, 1)
         nn.init.xavier_uniform_(self.fc.weight.data, 1.)
-        self.fc = SpectralNorm(self.fc)
+        self.fc = spectral_norm(self.fc)
 
     def forward(self, x):
         return self.fc(self.model(x).view(-1, self.DISC_SIZE))
