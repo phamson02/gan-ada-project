@@ -61,8 +61,8 @@ class GAN(BaseGAN):
     """
     def __init__(self, latent_dim):
         self.latent_dim = latent_dim
-        self.channels_img = 1
-        self.img_shape = (1, 28, 28)
+        self.channels_img = 3
+        self.img_shape = (3, 32, 32)
 
         self.generator = Generator(self.latent_dim, self.img_shape)
         self.discriminator = Discriminator(self.img_shape)
