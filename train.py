@@ -45,7 +45,7 @@ def main(config: ConfigParser):
     lr_scheduler_D = config.init_obj('lr_scheduler_D', torch.optim.lr_scheduler, optimizer_D)
 
     # choose augment options
-    augment = config.init_obj('augment', module_augment) if bool(config['augment']) else None
+    augment = config.init_obj('augment', module_augment).to(device) if bool(config['augment']) else None
 
     trainer = getattr(module_trainer, config['trainer']['type'])(model, criterion, optimizer_G, optimizer_D,
                                                                  config=config,

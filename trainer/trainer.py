@@ -133,7 +133,7 @@ class GANTrainer(BaseGANTrainer):
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t).cpu(),
+                    self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.lambda_t = list()
 
