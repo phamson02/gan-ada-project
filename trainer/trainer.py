@@ -86,7 +86,7 @@ class GANTrainer(BaseGANTrainer):
         ###LOG
         self.train_metrics.update('D(x)', 0.5*torch.mean(nn.Sigmoid()(d_out_real)) + \
                                             0.5*torch.mean(1-nn.Sigmoid()(d_out_fake)))
-        return d_loss.item(), nn.Sigmoid()(d_out_real.detach())
+        return d_loss.item(), d_out_real.detach()
     
     def _train_G(self):
         self.optimizer_G.zero_grad()
