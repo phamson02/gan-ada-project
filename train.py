@@ -3,7 +3,6 @@ import torch
 import numpy as np
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
-import model.metric as module_metric
 import model.models as module_arch
 import augment as module_augment
 import trainer as module_trainer
