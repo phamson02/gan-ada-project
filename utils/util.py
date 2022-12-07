@@ -69,3 +69,17 @@ class MetricTracker:
     def result(self):
         return dict(self._data.average)
 
+
+def init_wandb(api_key_file, project, entity, name=None, config=None):
+    """
+    Return a new W&B run to be used for logging purposes
+    """
+    assert os.path.exists(api_key_file), "The given W&B API key file does not exist"
+    api_key_value = open(api_key_file, "r").read().strip()
+    os.environ["WANDB_API_KEY"] = api_key_value
+    return wandb.init(
+        name=name,
+        project=project,
+        entity=entity,
+        config=config,
+    )

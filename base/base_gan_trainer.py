@@ -10,14 +10,13 @@ class BaseGANTrainer:
     """
     Base class for all GAN trainers
     """
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config):
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config):
         self.config: ConfigParser = config
         self.logger: Logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
         self.model = model
 
         self.criterion = criterion
-        self.metric_ftns = metric_ftns
 
         self.optimizer_G = optimizer_G
         self.optimizer_D = optimizer_D

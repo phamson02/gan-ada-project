@@ -36,7 +36,6 @@ def main(config: ConfigParser):
 
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
-    metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params_G = filter(lambda p: p.requires_grad, model.generator.parameters())
@@ -49,7 +48,7 @@ def main(config: ConfigParser):
     # choose augment options
     augment = config.init_obj('augment', module_augment) if bool(config['augment']) else None
 
-    trainer = getattr(module_trainer, config['trainer']['type'])(model, criterion, metrics, optimizer_G, optimizer_D,
+    trainer = getattr(module_trainer, config['trainer']['type'])(model, criterion, optimizer_G, optimizer_D,
                                                                  config=config,
                                                                  device=device,
                                                                  data_loader=data_loader,

@@ -12,9 +12,9 @@ class GANTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
-        super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
+        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
@@ -33,7 +33,7 @@ class GANTrainer(BaseGANTrainer):
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
         self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
-                                           *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+                                           writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
 
@@ -133,7 +133,7 @@ class GANTrainer(BaseGANTrainer):
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
+                    self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t).cpu(),
                                           batch_size_D=reals_out_D.shape[0])
                     self.lambda_t = list()
 
@@ -167,9 +167,9 @@ class WGANTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
-        super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
+        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
@@ -184,7 +184,7 @@ class WGANTrainer(BaseGANTrainer):
         self.lr_scheduler_D = lr_scheduler_D
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns],
+        self.train_metrics = MetricTracker('g_loss', 'd_loss',
                                            writer=self.writer)
         self.augment = augment
         self.iters = 0
@@ -282,9 +282,9 @@ class WGANGPTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp=10):
-        super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
+        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
@@ -300,7 +300,7 @@ class WGANGPTrainer(BaseGANTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
         self.lamba_gp = lambda_gp
         self.augment = augment
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns],
+        self.train_metrics = MetricTracker('g_loss', 'd_loss',
                                            writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
