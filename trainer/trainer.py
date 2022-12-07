@@ -6,10 +6,12 @@ from torch.autograd import Variable
 import torch.autograd as autograd
 import torch.nn as nn
 
+
 class GANTrainer(BaseGANTrainer):
     """
     Trainer class
     """
+
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
@@ -30,32 +32,35 @@ class GANTrainer(BaseGANTrainer):
         self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
-    
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+                                           *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.iters = 0
+        self.lambda_t = list()
+
     def _sample_noise(self, batch_size):
         return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
-    
+
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-        
+
         self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
-        
+
         g_loss = self.criterion(disc_out, self.valid[:self.current_batch_size])
 
         return g_loss
-    
+
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
-        
+
         d_fake_loss = self.criterion(d_out_fake, self.fake[:self.current_batch_size])
 
         return d_fake_loss, d_out_fake
-    
+
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
         d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
-    
+
         return d_real_loss, d_out_real
 
     def _train_D(self, real_imgs):
@@ -64,9 +69,9 @@ class GANTrainer(BaseGANTrainer):
         # Sample noise as generator input
         z = self._sample_noise(self.current_batch_size)
         # Generate a batch of images
-                
+
         gen_imgs = self.model.generator(z)
-        
+
         # Augment real and generated images
         if self.augment is not None:
             real_imgs = self.augment(real_imgs)
@@ -76,7 +81,7 @@ class GANTrainer(BaseGANTrainer):
         d_real_loss, d_out_real = self.d_real_loss(real_imgs)
 
         d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
-        
+
         d_loss = d_real_loss + d_fake_loss
 
         d_loss.backward()
@@ -84,14 +89,14 @@ class GANTrainer(BaseGANTrainer):
         self.optimizer_D.step()
 
         ###LOG
-        self.train_metrics.update('D(x)', 0.5*torch.mean(nn.Sigmoid()(d_out_real)) + \
-                                            0.5*torch.mean(1-nn.Sigmoid()(d_out_fake)))
+        self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
+                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
         return d_loss.item(), d_out_real.detach()
-    
+
     def _train_G(self):
         self.optimizer_G.zero_grad()
         z = self._sample_noise(self.current_batch_size)
-        
+
         gen_imgs = self.model.generator(z)
         # Augment generated images
         if self.augment is not None:
@@ -99,7 +104,7 @@ class GANTrainer(BaseGANTrainer):
 
         g_loss = self.gen_loss(gen_imgs)
         g_loss.backward()
-        
+
         self.optimizer_G.step()
         return g_loss.item()
 
@@ -113,7 +118,7 @@ class GANTrainer(BaseGANTrainer):
         self.model.generator.train()
         self.model.discriminator.train()
         self.train_metrics.reset()
-        
+
         for batch_idx, (real_imgs, _) in enumerate(self.data_loader):
             real_imgs = real_imgs.to(self.device)
             self.current_batch_size = real_imgs.shape[0]
@@ -121,11 +126,16 @@ class GANTrainer(BaseGANTrainer):
             d_loss = self._train_G()
 
             # -----TRAIN DISCRIMINATOR-----
-            g_loss, real_logits = self._train_D(real_imgs=real_imgs)
+            g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
 
+            self.iters += 1
+            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
-                self.augment.update_p(real_logits)
+                if self.iters % self.augment.integration_steps == 0:
+                    self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
+                                          batch_size_D=reals_out_D.shape[0])
+                    self.lambda_t = list()
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -141,7 +151,6 @@ class GANTrainer(BaseGANTrainer):
             if batch_idx == self.len_epoch:
                 break
 
-
         log = self.train_metrics.result()
 
         self._valid_epoch(epoch)
@@ -152,10 +161,12 @@ class GANTrainer(BaseGANTrainer):
             self.lr_scheduler_D.step()
         return log
 
+
 class WGANTrainer(BaseGANTrainer):
     """
     Trainer class
     """
+
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
@@ -173,8 +184,11 @@ class WGANTrainer(BaseGANTrainer):
         self.lr_scheduler_D = lr_scheduler_D
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns],
+                                           writer=self.writer)
         self.augment = augment
+        self.iters = 0
+        self.lambda_t = list()
 
     def _train_epoch(self, epoch):
         """
@@ -186,7 +200,7 @@ class WGANTrainer(BaseGANTrainer):
         self.model.generator.train()
         self.model.discriminator.train()
         self.train_metrics.reset()
-        
+
         for batch_idx, (real_imgs, _) in enumerate(self.data_loader):
             real_imgs = real_imgs.to(self.device)
 
@@ -229,9 +243,15 @@ class WGANTrainer(BaseGANTrainer):
             for p in self.model.discriminator.parameters():
                 p.data.clamp_(-0.01, 0.01)
 
+            reals_out_D = torch.randn(4,2,1)
+            self.iters += 1
+            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
-                self.augment.update_p(real_logits)
+                if self.iters % self.augment.integration_steps == 0:
+                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
+                                          batch_size_D=reals_out_D.shape[0])
+                    self.lambda_t = list()
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -256,12 +276,14 @@ class WGANTrainer(BaseGANTrainer):
             self.lr_scheduler_D.step()
         return log
 
+
 class WGANGPTrainer(BaseGANTrainer):
     """
     Trainer class
     """
+
     def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp = 10):
+                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp=10):
         super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
@@ -278,7 +300,10 @@ class WGANGPTrainer(BaseGANTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
         self.lamba_gp = lambda_gp
         self.augment = augment
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns],
+                                           writer=self.writer)
+        self.iters = 0
+        self.lambda_t = list()
 
     def compute_gradient_penalty(self, D, real_samples, fake_samples):
         """Calculates the gradient penalty loss for WGAN GP"""
@@ -315,7 +340,7 @@ class WGANGPTrainer(BaseGANTrainer):
         self.model.generator.train()
         self.model.discriminator.train()
         self.train_metrics.reset()
-        
+
         for batch_idx, (real_imgs, _) in enumerate(self.data_loader):
             cuda = True if torch.cuda.is_available() else False
 
@@ -360,9 +385,15 @@ class WGANGPTrainer(BaseGANTrainer):
             d_loss.backward()
             self.optimizer_D.step()
 
+            reals_out_D = torch.randn(4,2,1)
+            self.iters += 1
+            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
-                self.augment.update_p(real_logits)
+                if self.iters % self.augment.integration_steps == 0:
+                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
+                                          batch_size_D=reals_out_D.shape[0])
+                    self.lambda_t = list()
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
