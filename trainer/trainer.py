@@ -100,7 +100,7 @@ class WGANTrainer(BaseGANTrainer):
 
             # -----TRAIN DISCRIMINATOR-----
             g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
-            for param in self.discriminator.parameters():
+            for param in self.model.discriminator.parameters():
                 param.data_clamp_(-0.01, 0.01)
             
             self.iters += 1
@@ -191,7 +191,7 @@ class WGANGPTrainer(BaseGANTrainer):
 
         d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
         
-        gradient_penalty = self.compute_gradient_penalty(self.discriminator, real_imgs, gen_imgs)
+        gradient_penalty = self.compute_gradient_penalty(self.model.discriminator(), real_imgs, gen_imgs)
 
         d_loss = d_real_loss + d_fake_loss + self.lambda_gp * gradient_penalty
         d_loss.backward()
