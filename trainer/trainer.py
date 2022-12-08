@@ -80,7 +80,27 @@ class WGANTrainer(BaseGANTrainer):
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch = None):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
+    def gen_loss(self, gen_imgs):
+        disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
 
+        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
+
+        g_loss = -torch.mean(self.model.discriminator(gen_imgs))
+
+        return g_loss
+    def d_fake_loss(self, gen_imgs):
+        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+
+        d_fake_loss = torch.mean(self.model.discriminator(gen_imgs))
+
+        return d_fake_loss, d_out_fake
+
+    def d_real_loss(self, real_imgs):
+        d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
+
+        d_real_loss = -torch.mean(self.model.discriminator(real_imgs))
+
+        return d_real_loss, d_out_real
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
