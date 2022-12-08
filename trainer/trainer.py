@@ -83,7 +83,7 @@ class WGANTrainer(BaseGANTrainer):
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
 
-        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
+        #self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
 
         g_loss = -torch.mean(self.model.discriminator(gen_imgs))
 

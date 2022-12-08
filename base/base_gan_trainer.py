@@ -83,7 +83,6 @@ class BaseGANTrainer:
         d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
 
         return d_real_loss, d_out_real
-    @abstractmethod
     def _train_D(self, real_imgs):
         """Function for training D, returning current loss and D's probability predictions on real samples"""
         self.optimizer_D.zero_grad()
@@ -113,7 +112,6 @@ class BaseGANTrainer:
         self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
                                   0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
         return d_loss.item(), d_out_real.detach()
-    @abstractmethod
     def _train_G(self):
         self.optimizer_G.zero_grad()
         z = self._sample_noise(self.current_batch_size)
