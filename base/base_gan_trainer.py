@@ -15,7 +15,6 @@ class BaseGANTrainer:
     def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         self.config: ConfigParser = config
-        self.config = config
         self.logger: Logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
 
