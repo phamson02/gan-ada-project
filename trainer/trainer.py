@@ -13,7 +13,7 @@ class GANTrainer(BaseGANTrainer):
     """
 
     def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch):
+                 data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch = None):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
     def _train_epoch(self, epoch):
@@ -77,7 +77,7 @@ class WGANTrainer(BaseGANTrainer):
 
 
     def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch):
+                 data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch = None):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
 
@@ -143,7 +143,7 @@ class WGANGPTrainer(BaseGANTrainer):
     """
 
     def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch, lambda_gp = 10):
+                 data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch = None, lambda_gp = 10):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
         self.lambda_gp = lambda_gp
