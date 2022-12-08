@@ -12,9 +12,9 @@ class GANTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
-        super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
+        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
@@ -33,7 +33,7 @@ class GANTrainer(BaseGANTrainer):
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
         self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
-                                           *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+                                           writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
 
@@ -96,9 +96,9 @@ class WGANTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
-        super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
+        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
@@ -116,8 +116,9 @@ class WGANTrainer(BaseGANTrainer):
         self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
-                                           *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss',
+                                           writer=self.writer)
+        self.augment = augment
         self.iters = 0
         self.lambda_t = list()
 
@@ -182,9 +183,9 @@ class WGANGPTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer_G, optimizer_D, config, device,
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp=10):
-        super().__init__(model, criterion, metric_ftns, optimizer_G, optimizer_D, config)
+        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
         self.config = config
         self.device = device
         self.data_loader = data_loader
@@ -202,9 +203,8 @@ class WGANGPTrainer(BaseGANTrainer):
         self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
         self.lambda_gp = lambda_gp
-
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
-                                           *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns],
+                                           writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
 

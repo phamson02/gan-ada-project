@@ -37,7 +37,6 @@
     }
   },
   "loss": "adversarial_loss",
-  "metrics": [],
   "lr_scheduler_G": {
     "type": "StepLR",
     "args": {
