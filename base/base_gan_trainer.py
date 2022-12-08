@@ -48,16 +48,16 @@ class BaseGANTrainer:
         self.log_step = int(np.sqrt(data_loader.batch_size))
         self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
-
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
-                                           writer=self.writer)
-        self.iters = 0
-        self.lambda_t = list()
         # setup visualization writer instance                
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+                                           writer=self.writer)
+        self.iters = 0
+        self.lambda_t = list()
+
     def _sample_noise(self, batch_size):
         return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
 
