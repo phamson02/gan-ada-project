@@ -12,30 +12,8 @@ class GANTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
-        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
-        self.config = config
-        self.device = device
-        self.data_loader = data_loader
-        self.augment = augment
-        if len_epoch is None:
-            # epoch-based training
-            self.len_epoch = len(self.data_loader)
-        else:
-            # iteration-based training
-            self.data_loader = inf_loop(data_loader)
-            self.len_epoch = len_epoch
-        self.lr_scheduler_G = lr_scheduler_G
-        self.lr_scheduler_D = lr_scheduler_D
-        self.log_step = int(np.sqrt(data_loader.batch_size))
-        self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
-        self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
-
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
-                                           writer=self.writer)
-        self.iters = 0
-        self.lambda_t = list()
+    def __init__(self):
+        super().__init__()
 
     def _train_epoch(self, epoch):
         """
@@ -96,31 +74,9 @@ class WGANTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
-        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
-        self.config = config
-        self.device = device
-        self.data_loader = data_loader
-        self.augment = augment
-        if len_epoch is None:
-            # epoch-based training
-            self.len_epoch = len(self.data_loader)
-        else:
-            # iteration-based training
-            self.data_loader = inf_loop(data_loader)
-            self.len_epoch = len_epoch
-        self.lr_scheduler_G = lr_scheduler_G
-        self.lr_scheduler_D = lr_scheduler_D
-        self.log_step = int(np.sqrt(data_loader.batch_size))
-        self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
-        self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss',
-                                           writer=self.writer)
-        self.augment = augment
-        self.iters = 0
-        self.lambda_t = list()
+    def __init__(self):
+        super().__init__()
 
     def _train_epoch(self, epoch):
         """
@@ -183,30 +139,9 @@ class WGANGPTrainer(BaseGANTrainer):
     Trainer class
     """
 
-    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
-                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None, lambda_gp=10):
-        super().__init__(model, criterion, optimizer_G, optimizer_D, config)
-        self.config = config
-        self.device = device
-        self.data_loader = data_loader
-        self.augment = augment
-        if len_epoch is None:
-            # epoch-based training
-            self.len_epoch = len(self.data_loader)
-        else:
-            # iteration-based training
-            self.data_loader = inf_loop(data_loader)
-            self.len_epoch = len_epoch
-        self.lr_scheduler_G = lr_scheduler_G
-        self.lr_scheduler_D = lr_scheduler_D
-        self.log_step = int(np.sqrt(data_loader.batch_size))
-        self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
-        self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
+    def __init__(self, lambda_gp=10):
+        super().__init__()
         self.lambda_gp = lambda_gp
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', *[m.__name__ for m in self.metric_ftns],
-                                           writer=self.writer)
-        self.iters = 0
-        self.lambda_t = list()
 
     def compute_gradient_penalty(self, D, real_samples, fake_samples):
         """Calculates the gradient penalty loss for WGAN GP"""

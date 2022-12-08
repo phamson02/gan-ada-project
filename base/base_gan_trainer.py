@@ -5,12 +5,15 @@ from abc import abstractmethod
 from logger import TensorboardWriter
 from parse_config import ConfigParser
 import torch.nn as nn
+from utils import inf_loop, MetricTracker
+import numpy as np
 
 class BaseGANTrainer:
     """
     Base class for all GAN trainers
     """
-    def __init__(self, model, criterion, optimizer_G, optimizer_D, config):
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
+                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         self.config: ConfigParser = config
         self.logger: Logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
@@ -28,7 +31,27 @@ class BaseGANTrainer:
         self.start_epoch = 1
 
         self.checkpoint_dir = config.save_dir
+        self.config = config
+        self.device = device
+        self.data_loader = data_loader
+        self.augment = augment
+        if len_epoch is None:
+            # epoch-based training
+            self.len_epoch = len(self.data_loader)
+        else:
+            # iteration-based training
+            self.data_loader = inf_loop(data_loader)
+            self.len_epoch = len_epoch
+        self.lr_scheduler_G = lr_scheduler_G
+        self.lr_scheduler_D = lr_scheduler_D
+        self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
+        self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+                                           writer=self.writer)
+        self.iters = 0
+        self.lambda_t = list()
         # setup visualization writer instance                
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
 
