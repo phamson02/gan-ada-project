@@ -4,7 +4,7 @@ from torchvision.utils import make_grid
 from abc import abstractmethod
 from logger import TensorboardWriter
 from parse_config import ConfigParser
-
+import torch.nn as nn
 
 class BaseGANTrainer:
     """
@@ -35,6 +35,76 @@ class BaseGANTrainer:
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
+    def _sample_noise(self, batch_size):
+        return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
+
+    def gen_loss(self, gen_imgs):
+        disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
+
+        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
+
+        g_loss = self.criterion(disc_out, self.valid[:self.current_batch_size])
+
+        return g_loss
+
+    def d_fake_loss(self, gen_imgs):
+        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+
+        d_fake_loss = self.criterion(d_out_fake, self.fake[:self.current_batch_size])
+
+        return d_fake_loss, d_out_fake
+
+    def d_real_loss(self, real_imgs):
+        d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
+
+        d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
+
+        return d_real_loss, d_out_real
+    @abstractmethod
+    def _train_D(self, real_imgs):
+        """Function for training D, returning current loss and D's probability predictions on real samples"""
+        self.optimizer_D.zero_grad()
+        # Sample noise as generator input
+        z = self._sample_noise(self.current_batch_size)
+        # Generate a batch of images
+
+        gen_imgs = self.model.generator(z)
+
+        # Augment real and generated images
+        if self.augment is not None:
+            real_imgs = self.augment(real_imgs)
+            gen_imgs = self.augment(gen_imgs)
+
+        # Measure discriminator's ability to classify real from generated samples
+        d_real_loss, d_out_real = self.d_real_loss(real_imgs)
+
+        d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
+
+        d_loss = d_real_loss + d_fake_loss
+
+        d_loss.backward()
+
+        self.optimizer_D.step()
+
+        ###LOG
+        self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
+                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
+        return d_loss.item(), d_out_real.detach()
+    @abstractmethod
+    def _train_G(self):
+        self.optimizer_G.zero_grad()
+        z = self._sample_noise(self.current_batch_size)
+
+        gen_imgs = self.model.generator(z)
+        # Augment generated images
+        if self.augment is not None:
+            gen_imgs = self.augment(gen_imgs)
+
+        g_loss = self.gen_loss(gen_imgs)
+        g_loss.backward()
+
+        self.optimizer_G.step()
+        return g_loss.item()
 
     @abstractmethod
     def _train_epoch(self, epoch):
