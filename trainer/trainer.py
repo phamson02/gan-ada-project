@@ -102,7 +102,7 @@ class WGANTrainer(BaseGANTrainer):
             g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
             with torch.no_grad():                
                 for param in self.model.discriminator.parameters():
-                    param.clamp_(-0.01, 0.01)
+                    param.data.clamp_(-0.01, 0.01)
             
             self.iters += 1
             self.lambda_t.append(reals_out_D.sign().mean())
