@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 from itertools import repeat
 from collections import OrderedDict
+import os
 
 
 def ensure_dir(dirname):
@@ -46,6 +47,7 @@ def prepare_device(n_gpu_use):
     list_ids = list(range(n_gpu_use))
     return device, list_ids
 
+
 class MetricTracker:
     def __init__(self, *keys, writer=None):
         self.writer = writer
@@ -58,7 +60,10 @@ class MetricTracker:
 
     def update(self, key, value, n=1):
         if self.writer is not None:
-            self.writer.add_scalar(key, value)
+            if self.writer.name is 'wandb':
+                self.writer.log({key: value})
+            else:
+                self.writer.add_scalar(key, value)
         self._data.total[key] += value * n
         self._data.counts[key] += n
         self._data.average[key] = self._data.total[key] / self._data.counts[key]
@@ -70,14 +75,14 @@ class MetricTracker:
         return dict(self._data.average)
 
 
-def init_wandb(api_key_file, project, entity, name=None, config=None):
+def init_wandb(wandb_lib, project, entity, api_key_file='./init/wandb-api-key-file', name=None, config=None):
     """
     Return a new W&B run to be used for logging purposes
     """
     assert os.path.exists(api_key_file), "The given W&B API key file does not exist"
     api_key_value = open(api_key_file, "r").read().strip()
     os.environ["WANDB_API_KEY"] = api_key_value
-    return wandb.init(
+    return wandb_lib.init(
         name=name,
         project=project,
         entity=entity,

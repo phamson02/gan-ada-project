@@ -2,7 +2,7 @@ from logging import Logger
 import torch
 from torchvision.utils import make_grid
 from abc import abstractmethod
-from logger import TensorboardWriter
+from logger import TensorboardWriter, Wandb
 from parse_config import ConfigParser
 
 
@@ -29,8 +29,18 @@ class BaseGANTrainer:
 
         self.checkpoint_dir = config.save_dir
 
-        # setup visualization writer instance                
-        self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+
+        # setup visualization writer instance
+        if cfg_trainer['visual_tool'] in ['tensorboard', 'tensorboardX']:
+            self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['visual_tool'])
+        elif cfg_trainer['visual_tool'] is 'wandb':
+            visual_config = {"Architecture": config['arch']['type'], "trainer": cfg_trainer["type"], "augment": config['augment']['type']}
+            self.writer = Wandb(cfg_trainer, self.logger, cfg_trainer['visual_tool'], visualize_config=visual_config)
+        elif cfg_trainer['visual_tool'] is "None":
+            self.writer = None
+        else:
+            raise ImportError("Visualization tool isn't exists, please refer to comment 1.* "
+                              "to choose appropriate module")
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -125,12 +135,17 @@ class BaseGANTrainer:
             noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
             fake_imgs = self.model.generator(noise)
             self.writer.set_step(epoch, 'valid')
-            self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
-
+            if self.writer.name is "tensorboard":
+                self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
+            else:
+                self.writer.log({'fake': make_grid(fake_imgs.cpu(), nrow=8, normalize=True)})
         # Add 32 real images to tensorboard
         real_imgs, _ = next(iter(self.data_loader))
         self.writer.set_step(epoch, 'valid')
-        self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+        if self.writer.name is "tensorboard":
+            self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+        else:
+            self.writer.log({'real': make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True)})
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
