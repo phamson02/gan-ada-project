@@ -60,8 +60,8 @@
     "save_period": 1,
     "verbosity": 2,
 
-    "visual_tool": "tensorboard",
-    "__comment_1.1": "tensorboard",
+    "visual_tool": "torch.utils.tensorboard",
+    "__comment_1.1": "torch.utils.tensorboard",
     "__comment_1.2": "tensorboardX",
     "__comment_1.3": "wandb",
     "__comment_1.4": "None",
