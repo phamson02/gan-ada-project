@@ -80,7 +80,7 @@ class Wandb():
         self.writer = None
         self.selected_module = ""
         self.name = "wandb"
-        if visual_tool == "None":
+        if visual_tool != "None":
             # Retrieve vizualization writer.
             succeeded = False
             try:
