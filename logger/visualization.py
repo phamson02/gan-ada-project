@@ -10,7 +10,7 @@ class TensorboardWriter():
         self.writer = None
         self.selected_module = ""
         self.name = "tensorboard"
-        if visual_tool is not "None":
+        if visual_tool != "None":
             log_dir = str(log_dir)
 
             # Retrieve vizualization writer.
@@ -80,7 +80,7 @@ class Wandb():
         self.writer = None
         self.selected_module = ""
         self.name = "wandb"
-        if visual_tool is not "None":
+        if visual_tool == "None":
             # Retrieve vizualization writer.
             succeeded = False
             try:

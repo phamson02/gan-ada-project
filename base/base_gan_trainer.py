@@ -135,7 +135,7 @@ class BaseGANTrainer:
             noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
             fake_imgs = self.model.generator(noise)
             self.writer.set_step(epoch, 'valid')
-            if self.writer.name is "tensorboard":
+            if self.writer.name == "tensorboard":
                 self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
             else:
                 self.writer.log({'fake': make_grid(fake_imgs.cpu(), nrow=8, normalize=True)})
