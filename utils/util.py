@@ -60,7 +60,7 @@ class MetricTracker:
 
     def update(self, key, value, n=1):
         if self.writer is not None:
-            if self.writer.name is 'wandb':
+            if self.writer.name == 'wandb':
                 self.writer.log({key: value})
             else:
                 self.writer.add_scalar(key, value)
