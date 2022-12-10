@@ -97,7 +97,7 @@ class Wandb():
 
         self.writer = init_wandb(self.writer, api_key_file=cfg_trainer['api_key_file'],
                                  project=cfg_trainer['project'], entity=cfg_trainer['entity'],
-                                 name=cfg_trainer['name'] if cfg_trainer != "None" else None,
+                                 name=cfg_trainer['name'] if cfg_trainer['name'] != "None" else None,
                                  config=visualize_config,
                                  )
 
