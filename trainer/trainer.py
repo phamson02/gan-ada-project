@@ -81,8 +81,6 @@ class WGANTrainer(BaseGANTrainer):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
     def gen_loss(self, gen_imgs):
-        disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-
         #self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
 
         g_loss = -torch.mean(self.model.discriminator(gen_imgs))
@@ -212,7 +210,7 @@ class WGANGPTrainer(BaseGANTrainer):
 
         d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
         
-        gradient_penalty = self.compute_gradient_penalty(self.model.discriminator(), real_imgs, gen_imgs)
+        gradient_penalty = self.compute_gradient_penalty(self.model.discriminator, real_imgs, gen_imgs)
 
         d_loss = d_real_loss + d_fake_loss + self.lambda_gp * gradient_penalty
         d_loss.backward()
