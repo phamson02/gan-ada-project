@@ -35,7 +35,7 @@ class BaseGANTrainer:
             self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['visual_tool'])
         elif cfg_trainer['visual_tool'] == 'wandb':
             visual_config = {"Architecture": config['arch']['type'], "trainer": cfg_trainer["type"], "augment": config['augment']['type'] if config['augment']!={} else "None"}
-            self.writer = Wandb(cfg_trainer, self.logger, cfg_trainer['visual_tool'], visualize_config=visual_config)
+            self.writer = Wandb(config['name'], cfg_trainer, self.logger, cfg_trainer['visual_tool'], visualize_config=visual_config)
         elif cfg_trainer['visual_tool'] == "None":
             self.writer = None
         else:
