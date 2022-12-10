@@ -4,7 +4,7 @@ from torchvision.utils import make_grid
 from abc import abstractmethod
 from logger import TensorboardWriter, Wandb
 from parse_config import ConfigParser
-
+import wandb
 
 class BaseGANTrainer:
     """
@@ -71,6 +71,9 @@ class BaseGANTrainer:
 
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch)
+
+        if self.writer is not None:
+            self.writer.writer.finish()
 
     def _save_checkpoint(self, epoch):
         """
@@ -145,7 +148,8 @@ class BaseGANTrainer:
         if self.writer.name == "tensorboard":
             self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
         else:
-            self.writer.log({'real': make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True)})
+            images = wandb.Image(make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+            self.writer.log({'real': images})
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'

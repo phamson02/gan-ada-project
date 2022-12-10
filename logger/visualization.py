@@ -123,20 +123,12 @@ class Wandb():
         Otherwise:
             return a blank function handle that does nothing
         """
-        if name in self.tb_writer_ftns:
-            add_data = getattr(self.writer, name, None)
+        add_data = getattr(self.writer, name, None)
 
-            def wrapper(data: Dict[str, Any], *args, **kwargs):
-                if add_data is not None:
-                    # add mode(train/valid) tag
-                    tag = '{}/{}'.format(list(data.keys())[0], self.mode)
-                    add_data({tag: list(data.values())[0]}, self.step, *args, **kwargs)
+        def wrapper(data: Dict[str, Any], *args, **kwargs):
+            if add_data is not None:
+                # add mode(train/valid) tag
+                tag = '{}/{}'.format(list(data.keys())[0], self.mode)
+                add_data({tag: list(data.values())[0]}, self.step, *args, **kwargs)
 
-            return wrapper
-        else:
-            # default action for returning methods defined in this class, set_step() for instance.
-            try:
-                attr = object.__getattr__(name)
-            except AttributeError:
-                raise AttributeError("type object '{}' has no attribute '{}'".format(self.selected_module, name))
-            return attr
+        return wrapper
