@@ -125,10 +125,10 @@ class Wandb():
         """
         add_data = getattr(self.writer, name, None)
 
-        def wrapper(data: Dict[str, Any], *args, **kwargs):
+        def wrapper(data: Dict[str, Any], step="Use self.step", *args, **kwargs):
             if add_data is not None:
                 # add mode(train/valid) tag
                 tag = '{}/{}'.format(list(data.keys())[0], self.mode)
-                add_data({tag: list(data.values())[0]}, self.step, *args, **kwargs)
+                add_data({tag: data[list(data.keys())[0]]}, self.step if step is not None else step, *args, **kwargs)
 
         return wrapper

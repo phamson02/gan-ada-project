@@ -34,7 +34,7 @@ class BaseGANTrainer:
         if cfg_trainer['visual_tool'] in ['tensorboard', 'tensorboardX']:
             self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['visual_tool'])
         elif cfg_trainer['visual_tool'] == 'wandb':
-            visual_config = {"Architecture": config['arch']['type'], "trainer": cfg_trainer["type"], "augment": config['augment']['type']}
+            visual_config = {"Architecture": config['arch']['type'], "trainer": cfg_trainer["type"], "augment": config['augment']['type'] if config['augment']!={} else "None"}
             self.writer = Wandb(cfg_trainer, self.logger, cfg_trainer['visual_tool'], visualize_config=visual_config)
         elif cfg_trainer['visual_tool'] == "None":
             self.writer = None
@@ -80,7 +80,7 @@ class BaseGANTrainer:
         Saving checkpoints
 
         :param epoch: current epoch number
-        :param log: logging information of the epoch
+            :param log: logging information of the epoch
         """
         arch = type(self.model).__name__
         state = {
@@ -142,7 +142,7 @@ class BaseGANTrainer:
                 self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
             else:
                 images = wandb.Image(make_grid(fake_imgs.cpu()[:32], nrow=8))
-                self.writer.log({'fake': images})
+                self.writer.log({'fake': images}, step=None)
         # Add 32 real images to tensorboard
         real_imgs, _ = next(iter(self.data_loader))
         self.writer.set_step(epoch, 'valid')
@@ -150,7 +150,7 @@ class BaseGANTrainer:
             self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
         else:
             images = wandb.Image(make_grid(real_imgs.cpu()[:32], nrow=8))
-            self.writer.log({'real': images})
+            self.writer.log({'real': images}, step=None)
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
