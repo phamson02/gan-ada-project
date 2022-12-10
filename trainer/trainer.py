@@ -115,15 +115,15 @@ class WGANTrainer(BaseGANTrainer):
         for batch_idx, (real_imgs, _) in enumerate(self.data_loader):
             real_imgs = real_imgs.to(self.device)
             self.current_batch_size = real_imgs.shape[0]
-            # -----TRAIN GENERATOR-----
-            d_loss = self._train_G()
-
             # -----TRAIN DISCRIMINATOR-----
             g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
                         
             for param in self.model.discriminator.parameters():
-                param.data.clamp_(-0.5, 0.5)
-            
+                param.data.clamp_(-0.01, 0.01)
+            # -----TRAIN GENERATOR-----
+            d_loss = self._train_G()
+
+
             self.iters += 1
             self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
