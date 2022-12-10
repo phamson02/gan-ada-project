@@ -2,9 +2,9 @@ from logging import Logger
 import torch
 from torchvision.utils import make_grid
 from abc import abstractmethod
-from logger import TensorboardWriter
+from logger import TensorboardWriter, Wandb
 from parse_config import ConfigParser
-
+import wandb
 
 class BaseGANTrainer:
     """
@@ -29,8 +29,18 @@ class BaseGANTrainer:
 
         self.checkpoint_dir = config.save_dir
 
-        # setup visualization writer instance                
-        self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+
+        # setup visualization writer instance
+        if cfg_trainer['visual_tool'] in ['tensorboard', 'tensorboardX']:
+            self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['visual_tool'])
+        elif cfg_trainer['visual_tool'] == 'wandb':
+            visual_config = {"Architecture": config['arch']['type'], "trainer": cfg_trainer["type"], "augment": config['augment']['type'] if config['augment']!={} else "None"}
+            self.writer = Wandb(config['name'], cfg_trainer, self.logger, cfg_trainer['visual_tool'], visualize_config=visual_config)
+        elif cfg_trainer['visual_tool'] == "None":
+            self.writer = None
+        else:
+            raise ImportError("Visualization tool isn't exists, please refer to comment 1.* "
+                              "to choose appropriate module")
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -62,12 +72,15 @@ class BaseGANTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch)
 
+        if self.writer is not None:
+            self.writer.writer.finish()
+
     def _save_checkpoint(self, epoch):
         """
         Saving checkpoints
 
         :param epoch: current epoch number
-        :param log: logging information of the epoch
+            :param log: logging information of the epoch
         """
         arch = type(self.model).__name__
         state = {
@@ -120,17 +133,25 @@ class BaseGANTrainer:
 
         :param epoch: Integer, current training epoch.
         """
-        self.model.generator.eval()
-        with torch.no_grad():
-            noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
-            fake_imgs = self.model.generator(noise)
+        if self.writer is not None:
+            self.model.generator.eval()
+            with torch.no_grad():
+                noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
+                fake_imgs = self.model.generator(noise)
+                self.writer.set_step(epoch, 'valid')
+                if self.writer.name == "tensorboard":
+                    self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
+                else:
+                    images = wandb.Image(make_grid(fake_imgs.cpu()[:32], nrow=8))
+                    self.writer.log({'fake': images}, step=None)
+            # Add 32 real images to tensorboard
+            real_imgs, _ = next(iter(self.data_loader))
             self.writer.set_step(epoch, 'valid')
-            self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
-
-        # Add 32 real images to tensorboard
-        real_imgs, _ = next(iter(self.data_loader))
-        self.writer.set_step(epoch, 'valid')
-        self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+            if self.writer.name == "tensorboard":
+                self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+            else:
+                images = wandb.Image(make_grid(real_imgs.cpu()[:32], nrow=8))
+                self.writer.log({'real': images}, step=None)
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'

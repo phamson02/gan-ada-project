@@ -136,6 +136,7 @@ class GANTrainer(BaseGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.lambda_t = list()
+                self.train_metrics.update('p', self.augment.p)
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
