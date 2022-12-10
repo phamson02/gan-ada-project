@@ -85,7 +85,7 @@ class WGANTrainer(BaseGANTrainer):
 
         #self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
 
-        g_loss = -torch.mean(disc_out)
+        g_loss = -torch.mean(self.model.discriminator(gen_imgs))
 
         return g_loss
     def d_fake_loss(self, gen_imgs):
