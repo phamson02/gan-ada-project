@@ -32,7 +32,7 @@ class GANTrainer(BaseGANTrainer):
         self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
         self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', 'p',
                                            writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
@@ -185,7 +185,7 @@ class WGANTrainer(BaseGANTrainer):
         self.lr_scheduler_D = lr_scheduler_D
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
-        self.train_metrics = MetricTracker('g_loss', 'd_loss',
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'p',
                                            writer=self.writer)
         self.augment = augment
         self.iters = 0
@@ -253,6 +253,7 @@ class WGANTrainer(BaseGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.lambda_t = list()
+                self.train_metrics.update('p', self.augment.p)
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -301,7 +302,7 @@ class WGANGPTrainer(BaseGANTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
         self.lamba_gp = lambda_gp
         self.augment = augment
-        self.train_metrics = MetricTracker('g_loss', 'd_loss',
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'p',
                                            writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
@@ -395,6 +396,7 @@ class WGANGPTrainer(BaseGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.lambda_t = list()
+                self.train_metrics.update('p', self.augment.p)
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
