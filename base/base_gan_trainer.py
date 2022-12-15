@@ -140,17 +140,17 @@ class BaseGANTrainer:
                 fake_imgs = self.model.generator(noise)
                 self.writer.set_step(epoch, 'valid')
                 if self.writer.name == "tensorboard":
-                    self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
+                    self.writer.add_image('fake', make_grid(fake_imgs, nrow=8, normalize=True))
                 else:
-                    images = wandb.Image(make_grid(fake_imgs.cpu()[:32], nrow=8))
+                    images = wandb.Image(make_grid(fake_imgs[:32], nrow=8))
                     self.writer.log({'fake': images}, step=None)
             # Add 32 real images to tensorboard
             real_imgs, _ = next(iter(self.data_loader))
             self.writer.set_step(epoch, 'valid')
             if self.writer.name == "tensorboard":
-                self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+                self.writer.add_image('real', make_grid(real_imgs[:32], nrow=8, normalize=True))
             else:
-                images = wandb.Image(make_grid(real_imgs.cpu()[:32], nrow=8))
+                images = wandb.Image(make_grid(real_imgs[:32], nrow=8))
                 self.writer.log({'real': images}, step=None)
 
     def _progress(self, batch_idx):
