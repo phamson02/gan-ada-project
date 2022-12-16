@@ -62,7 +62,7 @@ class BaseGANTrainer:
                               "to choose appropriate module")
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', 'p',
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', 'p', 'd_out_real', 'd_out_fake',
                                            writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
@@ -72,26 +72,23 @@ class BaseGANTrainer:
 
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-
-        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
-
         g_loss = self.criterion(disc_out, self.valid[:self.current_batch_size])
 
-        return g_loss
+        return g_loss, disc_out.detach().cpu()
 
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
 
         d_fake_loss = self.criterion(d_out_fake, self.fake[:self.current_batch_size])
 
-        return d_fake_loss, d_out_fake
+        return d_fake_loss, d_out_fake.detach().cpu()
 
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
         d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
 
-        return d_real_loss, d_out_real
+        return d_real_loss, d_out_real.detach().cpu()
     def _train_D(self, real_imgs):
         """Function for training D, returning current loss and D's probability predictions on real samples"""
         self.optimizer_D.zero_grad()
@@ -118,8 +115,12 @@ class BaseGANTrainer:
         self.optimizer_D.step()
 
         ###LOG
-        self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
-                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
+        d_x = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
+                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu().numpy()
+        self.train_metrics.update('d_out_real', d_out_real.numpy())
+        self.train_metrics.update('D(x)', d_x)
+        del d_x
+
         return d_loss.item(), d_out_real.detach()
     def _train_G(self):
         self.optimizer_G.zero_grad()
@@ -129,11 +130,16 @@ class BaseGANTrainer:
         # Augment generated images
         if self.augment is not None:
             gen_imgs = self.augment(gen_imgs)
-
-        g_loss = self.gen_loss(gen_imgs)
+    
+        g_loss, d_out_g = self.gen_loss(gen_imgs)
         g_loss.backward()
 
         self.optimizer_G.step()
+        d_gz = torch.mean(nn.Sigmoid()(d_out_g)).detach().cpu().numpy()
+        self.train_metrics.update('D(G(z))', d_gz)
+        self.train_metrics.update('d_out_fake', d_out_g.numpy())
+        del d_gz, d_out_g
+        
         return g_loss.item()
 
     @abstractmethod

@@ -44,7 +44,7 @@ class GANTrainer(BaseGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
-                    self.lambda_t = list()
+                    self.lambda_t = list()  
 
             # Log loss
             if self.writer:
@@ -83,24 +83,24 @@ class WGANTrainer(BaseGANTrainer):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
     def gen_loss(self, gen_imgs):
-        #self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
+        disc_out = self.model.discriminator(gen_imgs)
+        g_loss = -torch.mean(disc_out)
 
-        g_loss = -torch.mean(self.model.discriminator(gen_imgs))
+        return g_loss, disc_out.detach().cpu()
 
-        return g_loss
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
 
         d_fake_loss = torch.mean(self.model.discriminator(gen_imgs.detach()))
 
-        return d_fake_loss, d_out_fake
+        return d_fake_loss, d_out_fake.detach().cpu()
 
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
         d_real_loss = -torch.mean(self.model.discriminator(real_imgs))
 
-        return d_real_loss, d_out_real
+        return d_real_loss, d_out_real.detach().cpu()
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -116,12 +116,12 @@ class WGANTrainer(BaseGANTrainer):
             real_imgs = real_imgs.to(self.device)
             self.current_batch_size = real_imgs.shape[0]
             # -----TRAIN DISCRIMINATOR-----
-            g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
+            d_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
                         
             for param in self.model.discriminator.parameters():
                 param.data.clamp_(-0.01, 0.01)
             # -----TRAIN GENERATOR-----
-            d_loss = self._train_G()
+            g_loss = self._train_G()
 
 
             self.iters += 1
@@ -159,7 +159,7 @@ class WGANTrainer(BaseGANTrainer):
         return log
 
 
-class WGANGPTrainer(BaseGANTrainer):
+class WGANGPTrainer(WGANTrainer):
     """
     Trainer class
     """
@@ -221,8 +221,11 @@ class WGANGPTrainer(BaseGANTrainer):
         self.optimizer_D.step()
 
         ###LOG
-        self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
-                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
+        dx = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
+                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu()
+        self.train_metrics.update('D(x)', dx)
+        self.train_metrics.update('d_out_real', d_out_real.numpy())
+        
         return d_loss.item(), d_out_real.detach()
     def _train_epoch(self, epoch):
         """
@@ -239,10 +242,10 @@ class WGANGPTrainer(BaseGANTrainer):
             real_imgs = real_imgs.to(self.device)
             self.current_batch_size = real_imgs.shape[0]
             # -----TRAIN GENERATOR-----
-            d_loss = self._train_G()
+            g_loss = self._train_G()
 
             # -----TRAIN DISCRIMINATOR-----
-            g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
+            d_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
 
             self.iters += 1
             self.lambda_t.append(reals_out_D.sign().mean())
