@@ -144,6 +144,9 @@ class BaseGANTrainer:
                 else:
                     images = wandb.Image(make_grid(fake_imgs[:32], nrow=8))
                     self.writer.log({'fake': images}, step=None)
+
+                del noise, fake_imgs
+
             # Add 32 real images to tensorboard
             real_imgs, _ = next(iter(self.data_loader))
             self.writer.set_step(epoch, 'valid')
@@ -152,6 +155,9 @@ class BaseGANTrainer:
             else:
                 images = wandb.Image(make_grid(real_imgs[:32], nrow=8))
                 self.writer.log({'real': images}, step=None)
+                del images
+
+            del real_imgs
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
