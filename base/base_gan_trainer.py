@@ -4,15 +4,20 @@ from torchvision.utils import make_grid
 from abc import abstractmethod
 from logger import TensorboardWriter, Wandb
 from parse_config import ConfigParser
+import torch.nn as nn
+from utils import inf_loop, MetricTracker
+import numpy as np
 import wandb
 
 class BaseGANTrainer:
     """
     Base class for all GAN trainers
     """
-    def __init__(self, model, criterion, optimizer_G, optimizer_D, config):
+    def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
+                 data_loader, augment=None, lr_scheduler_G=None, lr_scheduler_D=None, len_epoch=None):
         self.config: ConfigParser = config
         self.logger: Logger = config.get_logger('trainer', config['trainer']['verbosity'])
+
 
         self.model = model
 
@@ -28,9 +33,23 @@ class BaseGANTrainer:
         self.start_epoch = 1
 
         self.checkpoint_dir = config.save_dir
-
-
-        # setup visualization writer instance
+        self.config = config
+        self.device = device
+        self.data_loader = data_loader
+        self.augment = augment
+        if len_epoch is None:
+            # epoch-based training
+            self.len_epoch = len(self.data_loader)
+        else:
+            # iteration-based training
+            self.data_loader = inf_loop(data_loader)
+            self.len_epoch = len_epoch
+        self.lr_scheduler_G = lr_scheduler_G
+        self.lr_scheduler_D = lr_scheduler_D
+        self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.valid = torch.ones(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
+        self.fake = torch.zeros(config["data_loader"]["args"]["batch_size"], 1).to(self.device)
+        # setup visualization writer instance                
         if cfg_trainer['visual_tool'] in ['tensorboard', 'tensorboardX']:
             self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['visual_tool'])
         elif cfg_trainer['visual_tool'] == 'wandb':
@@ -41,9 +60,81 @@ class BaseGANTrainer:
         else:
             raise ImportError("Visualization tool isn't exists, please refer to comment 1.* "
                               "to choose appropriate module")
-
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+                                           writer=self.writer)
+        self.iters = 0
+        self.lambda_t = list()
+
+    def _sample_noise(self, batch_size):
+        return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
+
+    def gen_loss(self, gen_imgs):
+        disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
+
+        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
+
+        g_loss = self.criterion(disc_out, self.valid[:self.current_batch_size])
+
+        return g_loss
+
+    def d_fake_loss(self, gen_imgs):
+        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+
+        d_fake_loss = self.criterion(d_out_fake, self.fake[:self.current_batch_size])
+
+        return d_fake_loss, d_out_fake
+
+    def d_real_loss(self, real_imgs):
+        d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
+
+        d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
+
+        return d_real_loss, d_out_real
+    def _train_D(self, real_imgs):
+        """Function for training D, returning current loss and D's probability predictions on real samples"""
+        self.optimizer_D.zero_grad()
+        # Sample noise as generator input
+        z = self._sample_noise(self.current_batch_size)
+        # Generate a batch of images
+
+        gen_imgs = self.model.generator(z)
+
+        # Augment real and generated images
+        if self.augment is not None:
+            real_imgs = self.augment(real_imgs)
+            gen_imgs = self.augment(gen_imgs)
+
+        # Measure discriminator's ability to classify real from generated samples
+        d_real_loss, d_out_real = self.d_real_loss(real_imgs)
+
+        d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
+
+        d_loss = d_real_loss + d_fake_loss
+
+        d_loss.backward()
+
+        self.optimizer_D.step()
+
+        ###LOG
+        self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
+                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
+        return d_loss.item(), d_out_real.detach()
+    def _train_G(self):
+        self.optimizer_G.zero_grad()
+        z = self._sample_noise(self.current_batch_size)
+
+        gen_imgs = self.model.generator(z)
+        # Augment generated images
+        if self.augment is not None:
+            gen_imgs = self.augment(gen_imgs)
+
+        g_loss = self.gen_loss(gen_imgs)
+        g_loss.backward()
+
+        self.optimizer_G.step()
+        return g_loss.item()
 
     @abstractmethod
     def _train_epoch(self, epoch):
