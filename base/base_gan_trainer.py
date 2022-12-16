@@ -8,6 +8,7 @@ import torch.nn as nn
 from utils import inf_loop, MetricTracker
 import numpy as np
 import wandb
+import gc
 
 class BaseGANTrainer:
     """
@@ -120,6 +121,7 @@ class BaseGANTrainer:
         self.train_metrics.update('d_out_real', d_out_real.numpy().mean())
         self.train_metrics.update('D(x)', d_x)
         del d_x
+        gc.collect()
 
         return d_loss.item(), d_out_real.detach()
     def _train_G(self):
@@ -139,6 +141,7 @@ class BaseGANTrainer:
         self.train_metrics.update('D(G(z))', d_gz)
         self.train_metrics.update('d_out_fake', d_out_g.numpy().mean())
         del d_gz, d_out_g
+        gc.collect()
 
         return g_loss.item()
 
@@ -245,6 +248,7 @@ class BaseGANTrainer:
                     del images
 
                 del noise, fake_imgs
+                gc.collect()
 
             # Add 32 real images to tensorboard
             real_imgs, _ = next(iter(self.data_loader))
@@ -257,6 +261,7 @@ class BaseGANTrainer:
                 del images
 
             del real_imgs
+            gc.collect()
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'

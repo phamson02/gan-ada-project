@@ -5,7 +5,7 @@ from utils import inf_loop, MetricTracker
 from torch.autograd import Variable
 import torch.autograd as autograd
 import torch.nn as nn
-
+import gc
 
 class GANTrainer(BaseGANTrainer):
     """
@@ -44,6 +44,10 @@ class GANTrainer(BaseGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
+                    
+                    del reals_out_D
+                    gc.collect()
+                    
                     self.lambda_t = list()  
 
             # Log loss
@@ -57,6 +61,9 @@ class GANTrainer(BaseGANTrainer):
                     epoch,
                     self._progress(batch_idx),
                     g_loss, d_loss))
+            
+            del d_loss, g_loss
+            gc.collect()
 
             if batch_idx == self.len_epoch:
                 break
@@ -76,8 +83,6 @@ class WGANTrainer(BaseGANTrainer):
     """
     Trainer class
     """
-
-
     def __init__(self, model, criterion, optimizer_G, optimizer_D, config, device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch = None):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
@@ -132,6 +137,10 @@ class WGANTrainer(BaseGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
+                    
+                    del reals_out_D 
+                    gc.collect()
+                    
                     self.lambda_t = list()
 
             # Log loss
@@ -144,6 +153,9 @@ class WGANTrainer(BaseGANTrainer):
                     epoch,
                     self._progress(batch_idx),
                     g_loss, d_loss))
+            
+            del d_loss, g_loss
+            gc.collect()
 
             if batch_idx == self.len_epoch:
                 break
@@ -255,6 +267,10 @@ class WGANGPTrainer(WGANTrainer):
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
+                    
+                    del reals_out_D
+                    gc.collect()
+
                     self.lambda_t = list()
 
             # Log loss
@@ -267,6 +283,8 @@ class WGANGPTrainer(WGANTrainer):
                     epoch,
                     self._progress(batch_idx),
                     g_loss, d_loss))
+            del d_loss, g_loss
+            gc.collect()
 
             if batch_idx == self.len_epoch:
                 break
@@ -280,4 +298,3 @@ class WGANGPTrainer(WGANTrainer):
         if self.lr_scheduler_D is not None:
             self.lr_scheduler_D.step()
         return log
-
