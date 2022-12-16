@@ -1,18 +1,18 @@
 {
-  "name": "GAN",
+  "name": "Cifar10_AUG_GAN",
   "n_gpu": 1,
 
   "arch": {
-    "type": "SNGAN",
+    "type": "SNGAN32",
     "args": {
-      "latent_dim": 100
+      "latent_dim": 128
     }
   },
   "data_loader": {
-    "type": "CelebA64DataLoader",
+    "type": "Cifar10DataLoader",
     "args": {
-      "data_dir": "data/",
-      "batch_size": 32,
+      "data_dir": "/data",
+      "batch_size": 64,
       "shuffle": true,
       "num_workers": 2
     }
@@ -21,43 +21,45 @@
   "optimizer_G": {
     "type": "Adam",
     "args": {
-      "lr": 0.001,
+      "lr": 2e-4,
       "weight_decay": 0,
-      "amsgrad": true
-
+      "amsgrad": false,
+      "betas": [0.5, 0.999]
     }
   },
   "optimizer_D": {
     "type": "Adam",
     "args": {
-      "lr": 0.001,
+      "lr": 2e-4,
       "weight_decay": 0,
-      "amsgrad": true
+      "amsgrad": false,
+      "betas": [0.5, 0.999]
 
     }
   },
-  "loss": "adversarial_loss",
+  "loss": "wasserstein_loss",
+  "metrics": [],
   "lr_scheduler_G": {
     "type": "StepLR",
     "args": {
-      "step_size": 50,
-      "gamma": 0.1
+      "step_size": 1,
+      "gamma": 0.99
     }
   },
   "lr_scheduler_D": {
     "type": "StepLR",
     "args": {
-      "step_size": 50,
-      "gamma": 0.1
+      "step_size": 1,
+      "gamma": 0.99
     }
   },
   "trainer": {
-    "type": "WGANGPTrainer",
+    "type": "WGANTrainer",
 
     "epochs": 100,
 
     "save_dir": "saved/",
-    "save_period": 1,
+    "save_period": 5,
     "verbosity": 2,
 
     "visual_tool": "torch.utils.tensorboard",
