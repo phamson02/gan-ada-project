@@ -46,7 +46,8 @@ class GANTrainer(BaseGANTrainer):
                     self.lambda_t = list()
 
             # Log loss
-            self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
+            if self.writer:
+                self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('g_loss', g_loss)
             self.train_metrics.update('d_loss', d_loss)
 
