@@ -62,7 +62,7 @@ class BaseGANTrainer:
                               "to choose appropriate module")
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', 'p',
                                            writer=self.writer)
         self.iters = 0
         self.lambda_t = list()

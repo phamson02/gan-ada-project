@@ -43,6 +43,7 @@ class GANTrainer(BaseGANTrainer):
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
+                    self.train_metrics.update('p', self.augment.p)
                     self.lambda_t = list()
 
             # Log loss
@@ -130,6 +131,7 @@ class WGANTrainer(BaseGANTrainer):
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
+                    self.train_metrics.update('p', self.augment.p)
                     self.lambda_t = list()
 
             # Log loss
@@ -249,6 +251,7 @@ class WGANGPTrainer(BaseGANTrainer):
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t)/len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
+                    self.train_metrics.update('p', self.augment.p)
                     self.lambda_t = list()
 
             # Log loss
