@@ -11,6 +11,7 @@ from utils.fid_score import *
 
 import os
 import csv
+import gc
 
 # def resize(img):
 #     return F.interpolate(img, size=256)
@@ -68,7 +69,9 @@ def main(config: ConfigParser, args):
                 for j, g_img in enumerate(generated_imgs):
                     vutils.save_image(g_img.add(1).mul(0.5), 
                         os.path.join(config['eval']['save_dir'], '%d.png'%(i*config['eval']['batch_size']+j)))#, normalize=True, range=(-1,1))
-        
+                del generated_imgs
+                gc.collect()
+
         fid_value = calculate_fid_given_paths((config['eval']['save_dir'], args.calculated_stats), batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
         print(fid_value)
         with open(f"{model_name}.csv", "a") as f:
@@ -99,7 +102,6 @@ if __name__ == '__main__':
         CustomArgs(['-dir', '--dist'], type=str, target='eval;save_dir'),
         CustomArgs(['-n', '--n_sample'], type=int, target='eval;n_sample'),
         CustomArgs(['-bs', '--batch_size'], type=int, target='eval;batch_size'),
-        CustomArgs(['-cs', '--calculated_stats'], type=str, target='eval;calculated_stats'),
     ]
     config = ConfigParser.from_args(parser)
     # config = ConfigParser.from_args(args)
