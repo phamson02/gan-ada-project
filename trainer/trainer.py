@@ -224,7 +224,7 @@ class WGANGPTrainer(WGANTrainer):
         dx = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
                                   0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu()
         self.train_metrics.update('D(x)', dx)
-        self.train_metrics.update('d_out_real', d_out_real.numpy())
+        self.train_metrics.update('d_out_real', d_out_real.numpy().mean())
         
         return d_loss.item(), d_out_real.detach()
     def _train_epoch(self, epoch):

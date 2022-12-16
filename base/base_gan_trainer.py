@@ -117,7 +117,7 @@ class BaseGANTrainer:
         ###LOG
         d_x = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
                                   0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu().numpy()
-        self.train_metrics.update('d_out_real', d_out_real.numpy())
+        self.train_metrics.update('d_out_real', d_out_real.numpy().mean())
         self.train_metrics.update('D(x)', d_x)
         del d_x
 
@@ -137,9 +137,9 @@ class BaseGANTrainer:
         self.optimizer_G.step()
         d_gz = torch.mean(nn.Sigmoid()(d_out_g)).detach().cpu().numpy()
         self.train_metrics.update('D(G(z))', d_gz)
-        self.train_metrics.update('d_out_fake', d_out_g.numpy())
+        self.train_metrics.update('d_out_fake', d_out_g.numpy().mean())
         del d_gz, d_out_g
-        
+
         return g_loss.item()
 
     @abstractmethod
