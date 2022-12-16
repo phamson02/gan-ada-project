@@ -144,6 +144,8 @@ class BaseGANTrainer:
                 else:
                     images = wandb.Image(make_grid(fake_imgs[:32], nrow=8))
                     self.writer.log({'fake': images}, step=None)
+                    
+                    del images
 
                 del noise, fake_imgs
 
