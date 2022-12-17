@@ -91,7 +91,7 @@ class WGANTrainer(BaseGANTrainer):
         disc_out = self.model.discriminator(gen_imgs)
         g_loss = -disc_out.mean()
 
-        return g_loss, disc_out.detach().cpu()
+        return g_loss, disc_out.cpu()
 
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
@@ -105,7 +105,7 @@ class WGANTrainer(BaseGANTrainer):
 
         d_real_loss = -d_out_real.mean()
 
-        return d_real_loss, d_out_real.detach().cpu()
+        return d_real_loss, d_out_real.cpu()
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
