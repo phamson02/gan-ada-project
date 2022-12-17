@@ -6,11 +6,11 @@ import os
 from PIL import Image
 
 class CelebA64(Dataset):
-    def __init__(self, data_dir, transform, train_portion=0.9):
+    def __init__(self, data_dir, transform):
         self.data_dir = data_dir
         self.transform = transform
         self.img_paths = glob.glob(os.path.join(self.data_dir, "*.jpg"))
-        self.len = np.floor(len(self.img_paths)*train_portion).astype(int)
+        self.len = len(self.img_paths)
         self.img_paths = self.img_paths[:self.len]
 
     def __len__(self):

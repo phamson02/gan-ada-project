@@ -76,7 +76,7 @@ class TensorboardWriter():
 
 
 class Wandb():
-    def __init__(self, cfg_trainer, logger, visual_tool, visualize_config=None):
+    def __init__(self, name, cfg_trainer, logger, visual_tool, visualize_config=None):
         self.writer = None
         self.selected_module = ""
         self.name = "wandb"
@@ -97,7 +97,7 @@ class Wandb():
 
         self.writer = init_wandb(self.writer, api_key_file=cfg_trainer['api_key_file'],
                                  project=cfg_trainer['project'], entity=cfg_trainer['entity'],
-                                 name=cfg_trainer['name'] if cfg_trainer['name'] != "None" else None,
+                                 name=name,
                                  config=visualize_config,
                                  )
 
