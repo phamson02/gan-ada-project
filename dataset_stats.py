@@ -17,7 +17,7 @@ def main(args):
     paths = glob.glob(os.path.join(args.path, "*.png"))
     if len(paths) == 0:
         paths = glob.glob(os.path.join(args.path, "*.jpg"))
-    paths = paths[:int(len(paths)*args.protion)]
+    paths = paths[:int(len(paths)*args.portion)]
     
     assert len(paths) !=0
     
