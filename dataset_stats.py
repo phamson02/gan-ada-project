@@ -17,7 +17,10 @@ def main(args):
     paths = glob.glob(os.path.join(args.path, "*.png"))
     if len(paths) == 0:
         paths = glob.glob(os.path.join(args.path, "*.jpg"))
-
+    paths = paths[:int(len(paths)*args.protion)]
+    
+    assert len(paths) !=0
+    
     mu, sigma = calculate_activation_statistics(paths, model, device=device)
     
     os.makedirs(save_path, exist_ok=True)
@@ -27,6 +30,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-nm", "--dataset_name", default=None, type=str, help="name of the current dataset")
     parser.add_argument("-p", "--path", default=None, type=str, help="path to dataset dir")
+    parser.add_argument("-pr", "--portion", default=1.0, type=float, help="portion of training data for calculating stats")
     # parser.add_argument("-sp", "--save_path", default=None, type=str, help="path for saving statistics")
     args = parser.parse_args()
     main(args)
