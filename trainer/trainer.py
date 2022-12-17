@@ -125,7 +125,7 @@ class WGANTrainer(BaseGANTrainer):
             d_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
                         
             for param in self.model.discriminator.parameters():
-                param.data.clamp_(-0.01, 0.01)
+                param.data.clamp_(-0.1, 0.1)
             # -----TRAIN GENERATOR-----
             g_loss = self._train_G()
 
