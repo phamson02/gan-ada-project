@@ -125,7 +125,7 @@ class WGANTrainer(BaseGANTrainer):
             d_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
                         
             for param in self.model.discriminator.parameters():
-                param.data.clamp_(-1, 1)
+                param.data.clamp_(-0.5, 0.5)
             # -----TRAIN GENERATOR-----
             g_loss = self._train_G()
 
@@ -182,7 +182,26 @@ class WGANGPTrainer(WGANTrainer):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
         self.lambda_gp = lambda_gp
+    def gen_loss(self, gen_imgs):
+        disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
+        #self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
 
+        g_loss = -torch.mean(self.model.discriminator(gen_imgs))
+
+        return g_loss, disc_out.detach().cpu()    
+    def d_fake_loss(self, gen_imgs):
+        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+
+        d_fake_loss = torch.mean(self.model.discriminator(gen_imgs.detach()))
+
+        return d_fake_loss, d_out_fake.detach().cpu()
+
+    def d_real_loss(self, real_imgs):
+        d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
+
+        d_real_loss = -torch.mean(self.model.discriminator(real_imgs))
+
+        return d_real_loss, d_out_real.detach().cpu()
     def compute_gradient_penalty(self, D, real_samples, fake_samples):
         """Calculates the gradient penalty loss for WGAN GP"""
         # Random weight term for interpolation between real and fake samples
