@@ -73,7 +73,7 @@ def main(config: ConfigParser, args):
                 gc.collect()
 
         fid_value = calculate_fid_given_paths((config['eval']['save_dir'], args.calculated_stats), batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
-        print(fid_value)
+        print(fid_value, model_name)
         with open(f"./{model_name}.csv", "a") as f:
             writer = csv.writer(f)
             writer.writerow([fid_value, ckpt.split("/")[-1].split(".")[0]])  
