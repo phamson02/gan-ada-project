@@ -6,6 +6,7 @@ import numpy as np
 from utils.inception_score import InceptionV3
 import torch
 import os
+import glob
 
 def main(args):
     save_path = "datasets_stats"
@@ -13,11 +14,15 @@ def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = InceptionV3([block_idx]).to(device)
-    mu, sigma = calculate_activation_statistics(args.path, model)
-    
-    os.mkdir(save_path, exists_ok=True)
-    np.save(os.path.join(save_path, f"{args.dataset_name}.npz"), mu=mu, sigma=sigma)
+    paths = glob.glob(os.path.join(args.path, "*.png"))
+    if len(paths) == 0:
+        paths = glob.glob(os.path.join(args.path, "*.jpg"))
 
+    mu, sigma = calculate_activation_statistics(paths, model, device=device)
+    
+    os.makedirs(save_path, exist_ok=True)
+    np.savez(f"{save_path}/{args.dataset_name}.npz", mu=mu, sigma=sigma)
+    
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-nm", "--dataset_name", default=None, type=str, help="name of the current dataset")
