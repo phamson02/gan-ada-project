@@ -7,6 +7,8 @@ from utils.inception_score import InceptionV3
 import torch
 import os
 import glob
+from operator import itemgetter
+
 
 def main(args):
     # save_path = "datasets_stats"
@@ -18,11 +20,12 @@ def main(args):
     if len(paths) == 0:
         paths = glob.glob(os.path.join(args.path, "*.jpg"))
     
-    idx_full = np.arange(paths)
+    idx_full = np.arange(len(paths))
     np.random.seed(0)
     np.random.shuffle(idx_full)
     idx_calc = idx_full[:int(len(paths)*args.portion)]
-    paths = paths[idx_calc]
+    # print(idx_calc, type(idx_calc), list(idx_calc))
+    paths = itemgetter(*list(idx_calc))(paths)
     
     assert len(paths) !=0
     
