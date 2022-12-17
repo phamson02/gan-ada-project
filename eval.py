@@ -38,7 +38,7 @@ def main(config: ConfigParser, args):
     # build model architecture
     model = config.init_obj('arch', module_arch)
     resume = args.resume
-    model_name = resume.split("/")[-1]
+    model_name = config['name']
     logger.info(model)
     
     ckpts = glob.glob(os.path.join(resume, "*.pth"))
@@ -73,7 +73,7 @@ def main(config: ConfigParser, args):
                 gc.collect()
 
         fid_value = calculate_fid_given_paths((config['eval']['save_dir'], args.calculated_stats), batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
-        print(fid_value, model_name)
+        print(fid_value, ckpt)
         with open(f"./{model_name}.csv", "a") as f:
             writer = csv.writer(f)
             writer.writerow([fid_value, ckpt.split("/")[-1].split(".")[0]])  
