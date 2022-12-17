@@ -89,21 +89,21 @@ class WGANTrainer(BaseGANTrainer):
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs)
-        g_loss = -torch.mean(disc_out)
+        g_loss = -disc_out.mean()
 
         return g_loss, disc_out.detach().cpu()
 
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
 
-        d_fake_loss = torch.mean(d_out_fake.detach())
+        d_fake_loss = d_out_fake.detach().mean()
 
         return d_fake_loss, d_out_fake.detach().cpu()
 
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
-        d_real_loss = -torch.mean(d_out_real)
+        d_real_loss = -d_out_real.mean()
 
         return d_real_loss, d_out_real.detach().cpu()
     def _train_epoch(self, epoch):
