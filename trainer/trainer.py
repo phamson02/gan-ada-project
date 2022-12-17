@@ -87,6 +87,7 @@ class WGANTrainer(BaseGANTrainer):
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch = None):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config,device,
                  data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
+        self.clip_value = self.config["trainer"]["clip"]
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
         #self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
@@ -125,7 +126,7 @@ class WGANTrainer(BaseGANTrainer):
             d_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
                         
             for param in self.model.discriminator.parameters():
-                param.data.clamp_(-0.5, 0.5)
+                param.data.clamp_(-self.clip_value, self.clip_value)
             # -----TRAIN GENERATOR-----
             g_loss = self._train_G()
 
