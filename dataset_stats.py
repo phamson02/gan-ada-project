@@ -17,7 +17,12 @@ def main(args):
     paths = glob.glob(os.path.join(args.path, "*.png"))
     if len(paths) == 0:
         paths = glob.glob(os.path.join(args.path, "*.jpg"))
-    paths = paths[:int(len(paths)*args.portion)]
+    
+    idx_full = np.arange(paths)
+    np.random.seed(0)
+    np.random.shuffle(idx_full)
+    idx_calc = idx_full[:int(len(paths)*args.portion)]
+    paths = paths[idx_calc]
     
     assert len(paths) !=0
     
