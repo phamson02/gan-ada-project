@@ -69,7 +69,6 @@ class BaseGANTrainer:
 
     def _sample_noise(self, batch_size):
         return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
-
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
 
