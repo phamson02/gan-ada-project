@@ -173,7 +173,7 @@ class WGANTrainer(BaseGANTrainer):
         return log
 
 
-class WGANGPTrainer(WGANTrainer):
+class WGANGPTrainer(BaseGANTrainer):
     """
     Trainer class
     """
