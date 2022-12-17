@@ -9,7 +9,7 @@ import os
 import glob
 
 def main(args):
-    save_path = "datasets_stats"
+    # save_path = "datasets_stats"
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -23,8 +23,8 @@ def main(args):
     
     mu, sigma = calculate_activation_statistics(paths, model, device=device)
     
-    os.makedirs(save_path, exist_ok=True)
-    np.savez(f"{save_path}/{args.dataset_name}.npz", mu=mu, sigma=sigma)
+    # os.makedirs(save_path, exist_ok=True)
+    np.savez(f"{args.dataset_name}.npz", mu=mu, sigma=sigma)
     
 if __name__ == "__main__":
     parser = ArgumentParser()
