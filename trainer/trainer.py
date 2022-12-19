@@ -97,7 +97,7 @@ class WGANTrainer(BaseGANTrainer):
 
         return g_loss, disc_out.detach().cpu()    
     def d_fake_loss(self, gen_imgs):
-        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+        d_out_fake = self.model.discriminator(gen_imgs.detach()).requires_grad_(True)
 
         d_fake_loss = torch.mean(d_out_fake)
 
@@ -192,7 +192,7 @@ class WGANGPTrainer(BaseGANTrainer):
 
         return g_loss, disc_out.detach().cpu()    
     def d_fake_loss(self, gen_imgs):
-        d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
+        d_out_fake = self.model.discriminator(gen_imgs.detach()).requires_grad_(True)
 
         d_fake_loss = torch.mean(d_out_fake)
 
