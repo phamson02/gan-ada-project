@@ -6,6 +6,6 @@ def adversarial_loss(output, target):
 def wasserstein_loss(output,target):
     return torch.mean(output) - torch.mean(target)
 def leastsquare_loss(output, target):
-    return F.mse_loss(output,target)
+    return 1/2. * F.mse_loss(output,target)
 
 

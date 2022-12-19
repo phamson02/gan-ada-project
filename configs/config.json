@@ -56,6 +56,9 @@
     "type": "WGANTrainer",
 
     "epochs": 100,
+    "b": "None",
+    "a": "None",
+    "c": "None",
     "clip": 0.5,
     "save_dir": "saved/",
     "save_period": 5,
