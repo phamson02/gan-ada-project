@@ -124,7 +124,8 @@ class BaseGANTrainer:
         gc.collect()
 
         return d_loss.item(), d_out_real.detach()
-    def _train_G(self, imgs=None):
+
+    def _train_G(self):
         self.optimizer_G.zero_grad()
         z = self._sample_noise(self.current_batch_size)
 
