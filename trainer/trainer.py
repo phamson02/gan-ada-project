@@ -454,7 +454,7 @@ class FastGANTrainer(BaseGANTrainer):
     def d_real_loss(self, real_imgs):
         part = random.randint(0, 3)
         d_out_real, [rec_all, rec_small, rec_part] = \
-            self.model.discriminator(real_imgs, label="real", part=part).requires_grad_(True)
+            self.model.discriminator(real_imgs, label="real", part=part)
         d_real_loss = F.relu(torch.rand_like(d_out_real) * 0.2 + 0.8 - d_out_real).mean() + \
                       self.percept(rec_all, F.interpolate(real_imgs, rec_all.shape[2])).sum() + \
                       self.percept(rec_small, F.interpolate(real_imgs, rec_small.shape[2])).sum() + \
@@ -463,7 +463,7 @@ class FastGANTrainer(BaseGANTrainer):
 
         return d_real_loss, d_out_real.detach().cpu(), rec_all, rec_small, rec_part
 
-    def _train_D(self, real_imgs, gen_imgs=None):
+    def _train_D(self, real_imgs, gen_imgs):
         """Function for training D, returning current loss and D's probability predictions on real samples"""
         self.optimizer_D.zero_grad()
 
@@ -528,7 +528,7 @@ class FastGANTrainer(BaseGANTrainer):
                 real_img = self.augment(real_img)
 
             # -----TRAIN DISCRIMINATOR-----
-            g_loss, reals_out_D, rec_img_all, rec_img_small, rec_img_part = self._train_D(real_imgs=real_img)
+            g_loss, reals_out_D, rec_img_all, rec_img_small, rec_img_part = self._train_D(real_imgs=real_img, gen_imgs=gen_imgs)
 
             self.iters += 1
             self.lambda_t.append(reals_out_D.sign().mean())
@@ -561,20 +561,21 @@ class FastGANTrainer(BaseGANTrainer):
                     epoch,
                     self._progress(batch_idx),
                     g_loss, d_loss))
-                if self.writer.name == "tensorboard":
-                    self.train_metrics.add_image('Image128', make_grid(torch.cat([
-                        F.interpolate(real_img, 128),
-                        rec_img_all, rec_img_small,
-                        rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4, normalize=True))
-                else:
-                    images = wandb.Image(make_grid(torch.cat([
-                        F.interpolate(real_img, 128),
-                        rec_img_all, rec_img_small,
-                        rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4))
-                    self.writer.log({'Image128': images}, step=None)
+                if self.writer != "None":
+                    if self.writer.name == "tensorboard":
+                        self.train_metrics.add_image('Image128', make_grid(torch.cat([
+                            F.interpolate(real_img, 128),
+                            rec_img_all, rec_img_small,
+                            rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4, normalize=True))
+                    else:
+                        images = wandb.Image(make_grid(torch.cat([
+                            F.interpolate(real_img, 128),
+                            rec_img_all, rec_img_small,
+                            rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4))
+                        self.writer.log({'Image128': images}, step=None)
 
-                    del images
-                    del rec_img_all, rec_img_small, rec_img_part
+                        del images
+                        del rec_img_all, rec_img_small, rec_img_part
 
             del d_loss, g_loss
             gc.collect()
