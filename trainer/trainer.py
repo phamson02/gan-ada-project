@@ -333,21 +333,21 @@ class LSGANTrainer(BaseGANTrainer):
 
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-        g_loss = self.criterion(nn.Sigmoid(disc_out), torch.full([self.current_batch_size, 1], self.gen_c, dtype=torch.float32).to(self.device))
+        g_loss = self.criterion(nn.Sigmoid()(disc_out), torch.full([self.current_batch_size, 1], self.gen_c, dtype=torch.float32).to(self.device))
 
         return g_loss, disc_out.detach().cpu()
 
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
 
-        d_fake_loss = self.criterion(nn.Sigmoid(d_out_fake), torch.full([self.current_batch_size, 1], self.dis_a, dtype=torch.float32).to(self.device))
+        d_fake_loss = self.criterion(nn.Sigmoid()(d_out_fake), torch.full([self.current_batch_size, 1], self.dis_a, dtype=torch.float32).to(self.device))
 
         return d_fake_loss, d_out_fake.detach().cpu()
 
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
-        d_real_loss = self.criterion(nn.Sigmoid(d_out_real), torch.full([self.current_batch_size, 1], self.dis_b, dtype=torch.float32).to(self.device))
+        d_real_loss = self.criterion(nn.Sigmoid()(d_out_real), torch.full([self.current_batch_size, 1], self.dis_b, dtype=torch.float32).to(self.device))
 
         return d_real_loss, d_out_real.detach().cpu()
     def _train_epoch(self, epoch):
