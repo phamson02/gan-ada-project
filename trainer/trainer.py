@@ -333,7 +333,7 @@ class LSGANTrainer(BaseGANTrainer):
 
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-        g_loss = self.criterion(disc_out, torch.full([self.current_batch_size, 1], self.gen_c, dtype=torch.float32).to(self.device))
+        g_loss = self.criterion(nn.Sigmoid(disc_out), torch.full([self.current_batch_size, 1], self.gen_c, dtype=torch.float32).to(self.device))
 
         return g_loss, disc_out.detach().cpu()
 
