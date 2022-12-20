@@ -62,7 +62,8 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, input):
-        return self.main(input)
+        output = self.main(input)
+        return output.view(-1, 1)
 
 class DCGAN64(BaseGAN):
     """
