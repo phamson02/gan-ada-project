@@ -60,7 +60,7 @@
     "save_dir": "saved/",
     "save_period": 1,
     "verbosity": 2,
-
+    "save_interval": 100,
     "visual_tool": "wandb",
     "__comment_1.1": "torch.utils.tensorboard",
     "__comment_1.2": "tensorboardX",

@@ -434,6 +434,8 @@ class FastGANTrainer(BaseGANTrainer):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config, device,
                          data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
         self.avg_param_G = copy_G_params(model.generator)
+        self.fixed_noise = torch.randn(8, self.model.generator.latent_dim).to(self.device)
+        self.save_interval = config["trainer"]["save_interval"]
 
     def init_lpips(self):
         import lpips
@@ -531,9 +533,9 @@ class FastGANTrainer(BaseGANTrainer):
             g_loss, reals_out_D, rec_img_all, rec_img_small, rec_img_part = self._train_D(real_imgs=real_img, gen_imgs=gen_imgs)
 
             self.iters += 1
-            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
+                self.lambda_t.append(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
@@ -553,14 +555,16 @@ class FastGANTrainer(BaseGANTrainer):
 
             if self.writer:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-            self.train_metrics.update('g_loss', g_loss)
-            self.train_metrics.update('d_loss', d_loss)
-
-            if batch_idx % self.log_step == 0:
+            if self.iters % 100 == 0:
+                self.train_metrics.update('g_loss', g_loss)
+                self.train_metrics.update('d_loss', d_loss)
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
                     g_loss, d_loss))
+
+            if self.iters % (self.save_interval * 10) == 0:
+                self._valid_iters(epoch)
                 if self.writer != "None":
                     if self.writer.name == "tensorboard":
                         self.train_metrics.add_image('Image128', make_grid(torch.cat([
@@ -585,7 +589,6 @@ class FastGANTrainer(BaseGANTrainer):
 
         log = self.train_metrics.result()
 
-        self._valid_epoch(epoch)
 
         if self.lr_scheduler_G is not None:
             self.lr_scheduler_G.step()
@@ -609,13 +612,13 @@ class FastGANTrainer(BaseGANTrainer):
             for key, value in log.items():
                 self.logger.info('    {:15s}: {}'.format(str(key), value))
 
-            if epoch % self.save_period == 0:
+            if self.iters % (self.save_interval * 50) == 0 or epoch == self.epochs:
                 self._save_checkpoint(epoch)
 
         if self.writer is not None and self.writer.name == "wandb":
             self.writer.writer.finish()
 
-    def _valid_epoch(self, epoch):
+    def _valid_iters(self, epoch):
         """
         Validate after training an epoch
 
@@ -626,33 +629,33 @@ class FastGANTrainer(BaseGANTrainer):
             with torch.no_grad():
                 backup_para = copy_G_params(self.model.generator)
                 load_params(self.model.generator, self.avg_param_G)
-                noise = torch.randn(32, self.model.generator.latent_dim).to(self.device)
-                fake_imgs = self.model.generator(noise)
+
+                fake_imgs = self.model.generator(self.fixed_noise)
                 self.writer.set_step(epoch, 'valid')
                 if self.writer.name == "tensorboard":
-                    self.writer.add_image('fake', make_grid(fake_imgs[0], nrow=8, normalize=True))
+                    self.writer.add_image('fake', make_grid(fake_imgs[0], nrow=4, normalize=True))
                 else:
-                    images = wandb.Image(make_grid(fake_imgs[0][:32], nrow=8))
+                    images = wandb.Image(make_grid(fake_imgs[0], nrow=4))
                     self.writer.log({'fake': images}, step=None)
 
                     del images
 
-                del noise, fake_imgs
+                del fake_imgs
                 gc.collect()
                 load_params(self.model.generator, backup_para)
 
-            # Add 32 real images to tensorboard
-            real_imgs, _ = next(iter(self.data_loader))
-            self.writer.set_step(epoch, 'valid')
-            if self.writer.name == "tensorboard":
-                self.writer.add_image('real', make_grid(real_imgs[:8], nrow=4, normalize=True))
-            else:
-                images = wandb.Image(make_grid(real_imgs[:8], nrow=4))
-                self.writer.log({'real': images}, step=None)
-                del images
-
-            del real_imgs
-            gc.collect()
+            # # Add 8 real images to tensorboard
+            # real_imgs, _ = next(iter(self.data_loader))
+            # self.writer.set_step(epoch, 'valid')
+            # if self.writer.name == "tensorboard":
+            #     self.writer.add_image('real', make_grid(real_imgs[:8], nrow=4, normalize=True))
+            # else:
+            #     images = wandb.Image(make_grid(real_imgs[:8], nrow=4))
+            #     self.writer.log({'real': images}, step=None)
+            #     del images
+            #
+            # del real_imgs
+            # gc.collect()
 
     def _save_checkpoint(self, epoch):
         """
