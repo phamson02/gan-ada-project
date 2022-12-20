@@ -191,7 +191,7 @@ class BaseGANTrainer:
             'optimizer_D': self.optimizer_D.state_dict(),
             'config': self.config
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        filename = str(self.checkpoint_dir) + f'/{epoch}.pth'.zfill(4)
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
 
