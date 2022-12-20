@@ -629,9 +629,9 @@ class FastGANTrainer(BaseGANTrainer):
                 fake_imgs = self.model.generator(noise)
                 self.writer.set_step(epoch, 'valid')
                 if self.writer.name == "tensorboard":
-                    self.writer.add_image('fake', make_grid(fake_imgs, nrow=8, normalize=True))
+                    self.writer.add_image('fake', make_grid(fake_imgs[0], nrow=8, normalize=True))
                 else:
-                    images = wandb.Image(make_grid(fake_imgs[:32], nrow=8))
+                    images = wandb.Image(make_grid(fake_imgs[0][:32], nrow=8))
                     self.writer.log({'fake': images}, step=None)
 
                     del images
