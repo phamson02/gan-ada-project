@@ -23,3 +23,21 @@ class CelebA64(Dataset):
         if self.transform:
             img = self.transform(img)
         return (img, 1)
+
+class FFHQ(Dataset):
+    def __init__(self, data_dir, transform):
+        self.data_dir = data_dir
+        self.transform = transform
+        self.img_paths = glob.glob(os.path.join(self.data_dir, "*.png"))
+        self.len = len(self.img_paths)
+        self.img_paths = self.img_paths[:self.len]
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, index):
+        img = Image.open(self.img_paths[index])
+
+        if self.transform:
+            img = self.transform(img)
+        return (img, 1)

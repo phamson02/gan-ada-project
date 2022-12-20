@@ -41,28 +41,25 @@
   "lr_scheduler_G": {
     "type": "StepLR",
     "args": {
-      "step_size": 1,
-      "gamma": 0.99
+      "step_size": 50,
+      "gamma": 0.1
     }
   },
   "lr_scheduler_D": {
     "type": "StepLR",
     "args": {
-      "step_size": 1,
-      "gamma": 0.99
+      "step_size": 50,
+      "gamma": 0.1
     }
   },
   "trainer": {
-    "type": "WGANTrainer",
+    "type": "WGANGPTrainer",
 
     "epochs": 100,
-    "b": "None",
-    "a": "None",
-    "c": "None",
-    "clip": 0.5,
+
     "save_dir": "saved/",
-    "save_period": 5,
-    "verbosity": 1,
+    "save_period": 1,
+    "verbosity": 2,
 
     "visual_tool": "wandb",
     "__comment_1.1": "torch.utils.tensorboard",
@@ -81,5 +78,20 @@
     "batch_size": 8
   },
   "augment": {
+    "type": "Ada",
+    "args": {
+      "xflip":1,
+      "rotate90":1,
+      "xint":1,
+      "scale":1,
+      "rotate":1,
+      "aniso":1,
+      "xfrac":1,
+      "brightness":1,
+      "contrast":1,
+      "lumaflip":1,
+      "hue":1,
+      "saturation":1
+    }
   }
 }

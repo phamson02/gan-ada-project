@@ -69,7 +69,7 @@ class BaseGANTrainer:
         self.lambda_t = list()
 
     def _sample_noise(self, batch_size):
-        return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
+        return torch.randn(batch_size, self.model.latent_dim).to(self.device)
 
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
@@ -116,15 +116,15 @@ class BaseGANTrainer:
         self.optimizer_D.step()
 
         ###LOG
-        d_x = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
-                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu().numpy()
+        d_x = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) +
+               0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu().numpy()
         self.train_metrics.update('d_out_real', d_out_real.numpy().mean())
         self.train_metrics.update('D(x)', d_x)
         del d_x
         gc.collect()
 
         return d_loss.item(), d_out_real.detach()
-    def _train_G(self):
+    def _train_G(self, imgs=None):
         self.optimizer_G.zero_grad()
         z = self._sample_noise(self.current_batch_size)
 

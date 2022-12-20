@@ -39,4 +39,19 @@ class Cifar10DataLoader(BaseDataLoader):
                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                         ])
         self.dataset = datasets.CIFAR10(self.data_dir, transform=trsfm, download=True)
-        super().__init__(self.dataset, batch_size, shuffle, train_portion, num_workers, pin_memory=pin_memory, drop_last=drop_last)
+        super().__init__(self.dataset, batch_size, shuffle, train_portion, num_workers, pin_memory=pin_memory, drop_last=drop_last, training=True)
+
+
+class HighResolutionDataLoader(BaseDataLoader):
+    def __init__(self, data_dir, batch_size, img_size=512, shuffle=True, train_portion=1.0, num_workers=1, pin_memory=False, drop_last=False, training=True):
+        transform_list = [
+            transforms.Resize((int(img_size), int(img_size))),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ]
+        transf = transforms.Compose(transform_list)
+        self.data_dir = data_dir
+        self.dataset = FFHQ(self.data_dir, transform=transf)
+        super().__init__(self.dataset, batch_size, shuffle, train_portion, num_workers, pin_memory=pin_memory,
+                         drop_last=drop_last)
