@@ -31,6 +31,7 @@ class Generator(nn.Module):
         )
 
     def forward(self, input):
+        input = input.view(input.size(0), self.latent_dim, 1, 1)
         return self.main(input)
 
 
