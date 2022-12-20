@@ -70,7 +70,7 @@ class Discriminator(nn.Module):
     def forward(self, input):
         return self.main(input)
 
-class DCGAN(BaseGAN):
+class DCGAN64(BaseGAN):
     """
     DCGAN model for 64x64 images
     """
