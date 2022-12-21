@@ -39,7 +39,7 @@ class Cifar10DataLoader(BaseDataLoader):
                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                         ])
         self.dataset = datasets.CIFAR10(self.data_dir, transform=trsfm, download=True)
-        super().__init__(self.dataset, batch_size, shuffle, train_portion, num_workers, pin_memory=pin_memory, drop_last=drop_last, training=True)
+        super().__init__(self.dataset, batch_size, shuffle, train_portion, num_workers, pin_memory=pin_memory, drop_last=drop_last)
 
 
 class HighResolutionDataLoader(BaseDataLoader):
