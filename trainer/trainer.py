@@ -43,9 +43,9 @@ class GANTrainer(BaseGANTrainer):
             g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
 
             self.iters += 1
-            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
+                self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
@@ -54,7 +54,7 @@ class GANTrainer(BaseGANTrainer):
                     del reals_out_D
                     gc.collect()
 
-                    self.lambda_t = list()
+                    self.augment.reset_lambda()
 
             # Log loss
             if self.writer:
@@ -140,11 +140,10 @@ class WGANTrainer(BaseGANTrainer):
             # -----TRAIN GENERATOR-----
             g_loss = self._train_G()
 
-
             self.iters += 1
-            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
+                self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
@@ -153,7 +152,7 @@ class WGANTrainer(BaseGANTrainer):
                     del reals_out_D
                     gc.collect()
 
-                    self.lambda_t = list()
+                    self.augment.reset_lambda()
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -296,9 +295,9 @@ class WGANGPTrainer(BaseGANTrainer):
             d_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
 
             self.iters += 1
-            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
+                self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
@@ -307,7 +306,7 @@ class WGANGPTrainer(BaseGANTrainer):
                     del reals_out_D
                     gc.collect()
 
-                    self.lambda_t = list()
+                    self.augment.reset_lambda()
 
             # Log loss
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -347,21 +346,26 @@ class LSGANTrainer(BaseGANTrainer):
 
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-        g_loss = self.criterion(disc_out, torch.full([self.current_batch_size, 1], self.gen_c, dtype=torch.float32).to(self.device))
+        g_loss = self.criterion(disc_out, torch.full([self.current_batch_size, 1], self.gen_c, dtype=torch.float32).to(
+            self.device))
 
         return g_loss, disc_out.detach().cpu()
 
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
 
-        d_fake_loss = self.criterion(d_out_fake, torch.full([self.current_batch_size, 1], self.dis_a, dtype=torch.float32).to(self.device))
+        d_fake_loss = self.criterion(d_out_fake,
+                                     torch.full([self.current_batch_size, 1], self.dis_a, dtype=torch.float32).to(
+                                         self.device))
 
         return d_fake_loss, d_out_fake.detach().cpu()
 
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
-        d_real_loss = self.criterion(d_out_real, torch.full([self.current_batch_size, 1], self.dis_b, dtype=torch.float32).to(self.device))
+        d_real_loss = self.criterion(d_out_real,
+                                     torch.full([self.current_batch_size, 1], self.dis_b, dtype=torch.float32).to(
+                                         self.device))
 
         return d_real_loss, d_out_real.detach().cpu()
 
@@ -386,9 +390,9 @@ class LSGANTrainer(BaseGANTrainer):
             g_loss, reals_out_D = self._train_D(real_imgs=real_imgs)
 
             self.iters += 1
-            self.lambda_t.append(reals_out_D.sign().mean())
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
+                self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
@@ -397,9 +401,9 @@ class LSGANTrainer(BaseGANTrainer):
                     del reals_out_D
                     gc.collect()
 
-                    self.lambda_t = list()
+                    self.augment.reset_lambda()
 
-                    # Log loss
+            # Log loss
             if self.writer:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('g_loss', g_loss)
@@ -463,7 +467,7 @@ class FastGANTrainer(BaseGANTrainer):
                       self.percept(rec_part,
                                    F.interpolate(crop_image_by_part(real_imgs, part), rec_part.shape[2])).sum()
 
-        return d_real_loss, d_out_real.detach().cpu(), rec_all, rec_small, rec_part
+        return d_real_loss, d_out_real.detach().cpu(), rec_all.detach(), rec_small.detach(), rec_part.detach()
 
     def _train_D(self, real_imgs, gen_imgs):
         """Function for training D, returning current loss and D's probability predictions on real samples"""
@@ -471,12 +475,12 @@ class FastGANTrainer(BaseGANTrainer):
 
         # Measure discriminator's ability to classify real from generated samples
         d_real_loss, d_out_real, rec_all, rec_small, rec_part = self.d_real_loss(real_imgs)
+        d_loss = d_real_loss.detach()
+        d_real_loss.backward()
 
         d_fake_loss, d_out_fake = self.d_fake_loss(gen_imgs=gen_imgs)
-
-        d_loss = d_real_loss + d_fake_loss
-
-        d_loss.backward()
+        d_loss += d_fake_loss.detach()
+        d_fake_loss.backward()
 
         self.optimizer_D.step()
 
@@ -530,12 +534,13 @@ class FastGANTrainer(BaseGANTrainer):
                 real_img = self.augment(real_img)
 
             # -----TRAIN DISCRIMINATOR-----
-            g_loss, reals_out_D, rec_img_all, rec_img_small, rec_img_part = self._train_D(real_imgs=real_img, gen_imgs=gen_imgs)
+            d_loss, reals_out_D, rec_img_all, rec_img_small, rec_img_part = self._train_D(real_imgs=real_img,
+                                                                                          gen_imgs=gen_imgs)
 
             self.iters += 1
             # Update p value based on prediction of discriminator on real images
             if self.augment is not None and self.augment.name == "ADA":
-                self.lambda_t.append(reals_out_D.sign().mean())
+                self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
                     self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
                                           batch_size_D=reals_out_D.shape[0])
@@ -544,10 +549,10 @@ class FastGANTrainer(BaseGANTrainer):
                     del reals_out_D
                     gc.collect()
 
-                    self.lambda_t = list()
+                    self.augment.reset_lambda()
 
             # -----TRAIN GENERATOR-----
-            d_loss = self._train_G(gen_imgs)
+            g_loss = self._train_G(gen_imgs)
 
             ### EMA Generator update
             for p, avg_p in zip(self.model.generator.parameters(), self.avg_param_G):
@@ -556,12 +561,12 @@ class FastGANTrainer(BaseGANTrainer):
             if self.writer:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             if self.iters % 100 == 0:
-                self.train_metrics.update('g_loss', g_loss)
+                self.train_metrics.update('g_loss', -g_loss)
                 self.train_metrics.update('d_loss', d_loss)
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
-                    g_loss, d_loss))
+                    -g_loss, d_loss))
 
             if self.iters % (self.save_interval * 10) == 0:
                 self._valid_iters(epoch)
@@ -581,6 +586,9 @@ class FastGANTrainer(BaseGANTrainer):
                         del images
                         del rec_img_all, rec_img_small, rec_img_part
 
+            if self.iters % (self.save_interval * 50) == 0 or epoch == self.epochs:
+                self._save_checkpoint(epoch)
+
             del d_loss, g_loss
             gc.collect()
 
@@ -588,7 +596,6 @@ class FastGANTrainer(BaseGANTrainer):
                 break
 
         log = self.train_metrics.result()
-
 
         if self.lr_scheduler_G is not None:
             self.lr_scheduler_G.step()
@@ -612,9 +619,6 @@ class FastGANTrainer(BaseGANTrainer):
             for key, value in log.items():
                 self.logger.info('    {:15s}: {}'.format(str(key), value))
 
-            if self.iters % (self.save_interval * 50) == 0 or epoch == self.epochs:
-                self._save_checkpoint(epoch)
-
         if self.writer is not None and self.writer.name == "wandb":
             self.writer.writer.finish()
 
@@ -626,10 +630,10 @@ class FastGANTrainer(BaseGANTrainer):
         """
         if self.writer is not None:
             self.model.generator.eval()
-            with torch.no_grad():
-                backup_para = copy_G_params(self.model.generator)
-                load_params(self.model.generator, self.avg_param_G)
+            backup_para = copy_G_params(self.model.generator)
+            load_params(self.model.generator, self.avg_param_G)
 
+            with torch.no_grad():
                 fake_imgs = self.model.generator(self.fixed_noise)
                 self.writer.set_step(epoch, 'valid')
                 if self.writer.name == "tensorboard":
@@ -642,20 +646,20 @@ class FastGANTrainer(BaseGANTrainer):
 
                 del fake_imgs
                 gc.collect()
-                load_params(self.model.generator, backup_para)
+            load_params(self.model.generator, backup_para)
 
-            # # Add 8 real images to tensorboard
-            # real_imgs, _ = next(iter(self.data_loader))
-            # self.writer.set_step(epoch, 'valid')
-            # if self.writer.name == "tensorboard":
-            #     self.writer.add_image('real', make_grid(real_imgs[:8], nrow=4, normalize=True))
-            # else:
-            #     images = wandb.Image(make_grid(real_imgs[:8], nrow=4))
-            #     self.writer.log({'real': images}, step=None)
-            #     del images
-            #
-            # del real_imgs
-            # gc.collect()
+            # Add 8 real images to tensorboard
+            real_imgs, _ = next(iter(self.data_loader))
+            self.writer.set_step(epoch, 'valid')
+            if self.writer.name == "tensorboard":
+                self.writer.add_image('real', make_grid(real_imgs[:8], nrow=4, normalize=True))
+            else:
+                images = wandb.Image(make_grid(real_imgs[:8], nrow=4))
+                self.writer.log({'real': images}, step=None)
+                del images
+
+            del real_imgs
+            gc.collect()
 
     def _save_checkpoint(self, epoch):
         """
@@ -673,6 +677,7 @@ class FastGANTrainer(BaseGANTrainer):
             'state_dict': self.model.state_dict(),
             'optimizer_G': self.optimizer_G.state_dict(),
             'optimizer_D': self.optimizer_D.state_dict(),
+            'augment': self.augment.state_dict() if self.augment else None,
             'config': self.config
         }
         filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
@@ -709,7 +714,12 @@ class FastGANTrainer(BaseGANTrainer):
         else:
             self.optimizer_D.load_state_dict(checkpoint['optimizer_D'])
 
+        # load augmentation state from checkpoint
+        if checkpoint['config']['augment'] != self.config['augment']:
+            self.logger.warning(
+                "Warning: Augmentation type given in config file is different from that of checkpoint. "
+                "Augmentation not being resumed.")
+        if self.augment:
+            self.augment.load_state_dict(checkpoint['augment'])
+
         self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
-
-
-
