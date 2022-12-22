@@ -17,7 +17,7 @@ class Ada(BAug.AugmentPipe):
         self.ada_target = ada_target
         self.integration_steps = integration_steps
         self.ada_kimg = ada_kimg
-        self.lambda_t = dict()
+        self.lambda_t = list()
 
     def update_p(self, lambda_t, batch_size_D):
         # the augmentation probability is updated based on the dicriminator's
@@ -31,4 +31,4 @@ class Ada(BAug.AugmentPipe):
         self.lambda_t.append(lambda_t)
 
     def reset_lambda(self):
-        self.lambda_t = dict()
+        self.lambda_t = list()
