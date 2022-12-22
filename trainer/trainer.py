@@ -560,7 +560,7 @@ class FastGANTrainer(BaseGANTrainer):
 
             if self.writer:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-            if self.iters % 100 == 0:
+            if self.iters % 10 == 0:
                 self.train_metrics.update('g_loss', -g_loss)
                 self.train_metrics.update('d_loss', d_loss)
                 self.logger.debug('Train Epoch: {} {} G_Loss: {:.6f} D_Loss: {:.6f}'.format(
