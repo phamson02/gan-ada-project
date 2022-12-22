@@ -47,8 +47,7 @@ class GANTrainer(BaseGANTrainer):
             if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
-                                          batch_size_D=reals_out_D.shape[0])
+                    self.augment.update_p(batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
 
                     del reals_out_D
@@ -145,8 +144,7 @@ class WGANTrainer(BaseGANTrainer):
             if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
-                                          batch_size_D=reals_out_D.shape[0])
+                    self.augment.update_p(batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
 
                     del reals_out_D
@@ -299,8 +297,7 @@ class WGANGPTrainer(BaseGANTrainer):
             if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
-                                          batch_size_D=reals_out_D.shape[0])
+                    self.augment.update_p(batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
 
                     del reals_out_D
@@ -394,8 +391,7 @@ class LSGANTrainer(BaseGANTrainer):
             if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
-                                          batch_size_D=reals_out_D.shape[0])
+                    self.augment.update_p(batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
 
                     del reals_out_D
@@ -542,8 +538,7 @@ class FastGANTrainer(BaseGANTrainer):
             if self.augment is not None and self.augment.name == "ADA":
                 self.augment.update_lambda(reals_out_D.sign().mean())
                 if self.iters % self.augment.integration_steps == 0:
-                    self.augment.update_p(lambda_t=sum(self.lambda_t) / len(self.lambda_t),
-                                          batch_size_D=reals_out_D.shape[0])
+                    self.augment.update_p(batch_size_D=reals_out_D.shape[0])
                     self.train_metrics.update('p', self.augment.p)
 
                     del reals_out_D
