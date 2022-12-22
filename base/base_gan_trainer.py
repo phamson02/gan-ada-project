@@ -190,6 +190,7 @@ class BaseGANTrainer:
             'state_dict': self.model.state_dict(),
             'optimizer_G': self.optimizer_G.state_dict(),
             'optimizer_D': self.optimizer_D.state_dict(),
+            'augment': self.augment.state_dict() if self.augment else None,
             'config': self.config
         }
         filename = str(self.checkpoint_dir) + f'/{epoch}.pth'.zfill(4)
@@ -225,6 +226,13 @@ class BaseGANTrainer:
                                 "Optimizer parameters not being resumed.")
         else:
             self.optimizer_D.load_state_dict(checkpoint['optimizer_D'])
+
+        # load augmentation state from checkpoint
+        if checkpoint['config']['augment'] != self.config['augment']:
+            self.logger.warning("Warning: Augmentation type given in config file is different from that of checkpoint. "
+                                "Augmentation not being resumed.")
+        if self.augment:
+            self.augment.load_state_dict(checkpoint['augment'])
 
         self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
