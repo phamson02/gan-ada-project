@@ -5,6 +5,7 @@ from pathlib import Path
 from itertools import repeat
 from collections import OrderedDict
 import os
+from copy import deepcopy
 
 
 def ensure_dir(dirname):
@@ -88,3 +89,37 @@ def init_wandb(wandb_lib, project, entity, api_key_file='./init/wandb-api-key-fi
         entity=entity,
         config=config,
     )
+
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        try:
+            m.weight.data.normal_(0.0, 0.02)
+        except:
+            pass
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
+        m.bias.data.fill_(0)
+
+
+def crop_image_by_part(image, part):
+    hw = image.shape[2] // 2
+    if part == 0:
+        return image[:, :, :hw, :hw]
+    if part == 1:
+        return image[:, :, :hw, hw:]
+    if part == 2:
+        return image[:, :, hw:, :hw]
+    if part == 3:
+        return image[:, :, hw:, hw:]
+
+
+def copy_G_params(model):
+    flatten = deepcopy(list(p.data for p in model.parameters()))
+    return flatten
+
+
+def load_params(model, new_param):
+    for p, new_p in zip(model.parameters(), new_param):
+        p.data.copy_(new_p)

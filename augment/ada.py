@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import augment.base_augment as BAug
 import numpy as np
 
+
 def step(values):
     # negative values -> 0.0, positive values -> 1.0
     return 0.5 * (1.0 + torch.sign(values))
@@ -16,11 +17,18 @@ class Ada(BAug.AugmentPipe):
         self.ada_target = ada_target
         self.integration_steps = integration_steps
         self.ada_kimg = ada_kimg
+        self.lambda_t = list()
 
-    def update_p(self, lambda_t, batch_size_D):
+    def update_p(self, batch_size_D):
         # the augmentation probability is updated based on the dicriminator's
         # accuracy on real images
-        accuracy_error = lambda_t.cpu() - self.ada_target
+        accuracy_error = (sum(self.lambda_t)/self.integration_steps).cpu() - self.ada_target
         self.p.copy_(torch.as_tensor(torch.clamp(self.p + np.sign(accuracy_error) * \
                                                  batch_size_D * self.integration_steps / \
                                                  (1000 * self.ada_kimg), 0., 1.)))
+
+    def update_lambda(self, lambda_t):
+        self.lambda_t.append(lambda_t)
+
+    def reset_lambda(self):
+        self.lambda_t = list()

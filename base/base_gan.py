@@ -8,7 +8,7 @@ class BaseGAN(ABC):
     """
     Base class for all GANs
     """
-    def __init__(self, latent_dim, generator, discriminator):
+    def __init__(self, generator, discriminator, latent_dim=None):
         self.latent_dim = latent_dim
         self.generator = generator
         self.discriminator = discriminator

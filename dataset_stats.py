@@ -6,22 +6,39 @@ import numpy as np
 from utils.inception_score import InceptionV3
 import torch
 import os
+import glob
+from operator import itemgetter
+
 
 def main(args):
-    save_path = "datasets_stats"
+    # save_path = "datasets_stats"
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = InceptionV3([block_idx]).to(device)
-    mu, sigma = calculate_activation_statistics(args.path, model)
+    paths = glob.glob(os.path.join(args.path, "*.png"))
+    if len(paths) == 0:
+        paths = glob.glob(os.path.join(args.path, "*.jpg"))
     
-    os.mkdir(save_path, exists_ok=True)
-    np.save(os.path.join(save_path, f"{args.dataset_name}.npz"), mu=mu, sigma=sigma)
-
+    idx_full = np.arange(len(paths))
+    np.random.seed(0)
+    np.random.shuffle(idx_full)
+    idx_calc = idx_full[:int(len(paths)*args.portion)]
+    # print(idx_calc, type(idx_calc), list(idx_calc))
+    paths = itemgetter(*list(idx_calc))(paths)
+    
+    assert len(paths) !=0
+    
+    mu, sigma = calculate_activation_statistics(paths, model, device=device)
+    
+    # os.makedirs(save_path, exist_ok=True)
+    np.savez(f"{args.dataset_name}.npz", mu=mu, sigma=sigma)
+    
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-nm", "--dataset_name", default=None, type=str, help="name of the current dataset")
     parser.add_argument("-p", "--path", default=None, type=str, help="path to dataset dir")
+    parser.add_argument("-pr", "--portion", default=1.0, type=float, help="portion of training data for calculating stats")
     # parser.add_argument("-sp", "--save_path", default=None, type=str, help="path for saving statistics")
     args = parser.parse_args()
     main(args)

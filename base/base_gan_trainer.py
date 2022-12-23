@@ -8,6 +8,7 @@ import torch.nn as nn
 from utils import inf_loop, MetricTracker
 import numpy as np
 import wandb
+import gc
 
 class BaseGANTrainer:
     """
@@ -62,36 +63,33 @@ class BaseGANTrainer:
                               "to choose appropriate module")
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
-        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)',
+        self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', 'p', 'd_out_real', 'd_out_fake',
                                            writer=self.writer)
         self.iters = 0
         self.lambda_t = list()
 
     def _sample_noise(self, batch_size):
-        return torch.randn(batch_size, self.model.generator.latent_dim).to(self.device)
+        return torch.randn(batch_size, self.model.latent_dim).to(self.device)
 
     def gen_loss(self, gen_imgs):
         disc_out = self.model.discriminator(gen_imgs).requires_grad_(True)
-
-        self.train_metrics.update('D(G(z))', torch.mean(nn.Sigmoid()(disc_out)))
-
         g_loss = self.criterion(disc_out, self.valid[:self.current_batch_size])
 
-        return g_loss
+        return g_loss, disc_out.detach().cpu()
 
     def d_fake_loss(self, gen_imgs):
         d_out_fake = self.model.discriminator(gen_imgs).requires_grad_(True)
 
         d_fake_loss = self.criterion(d_out_fake, self.fake[:self.current_batch_size])
 
-        return d_fake_loss, d_out_fake
+        return d_fake_loss, d_out_fake.detach().cpu()
 
     def d_real_loss(self, real_imgs):
         d_out_real = self.model.discriminator(real_imgs).requires_grad_(True)
 
         d_real_loss = self.criterion(d_out_real, self.valid[:self.current_batch_size])
 
-        return d_real_loss, d_out_real
+        return d_real_loss, d_out_real.detach().cpu()
     def _train_D(self, real_imgs):
         """Function for training D, returning current loss and D's probability predictions on real samples"""
         self.optimizer_D.zero_grad()
@@ -118,9 +116,15 @@ class BaseGANTrainer:
         self.optimizer_D.step()
 
         ###LOG
-        self.train_metrics.update('D(x)', 0.5 * torch.mean(nn.Sigmoid()(d_out_real)) + \
-                                  0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake)))
+        d_x = (0.5 * torch.mean(nn.Sigmoid()(d_out_real)) +
+               0.5 * torch.mean(1 - nn.Sigmoid()(d_out_fake))).detach().cpu().numpy()
+        self.train_metrics.update('d_out_real', d_out_real.numpy().mean())
+        self.train_metrics.update('D(x)', d_x)
+        del d_x
+        gc.collect()
+
         return d_loss.item(), d_out_real.detach()
+
     def _train_G(self):
         self.optimizer_G.zero_grad()
         z = self._sample_noise(self.current_batch_size)
@@ -129,11 +133,17 @@ class BaseGANTrainer:
         # Augment generated images
         if self.augment is not None:
             gen_imgs = self.augment(gen_imgs)
-
-        g_loss = self.gen_loss(gen_imgs)
+    
+        g_loss, d_out_g = self.gen_loss(gen_imgs)
         g_loss.backward()
 
         self.optimizer_G.step()
+        d_gz = torch.mean(nn.Sigmoid()(d_out_g)).detach().cpu().numpy()
+        self.train_metrics.update('D(G(z))', d_gz)
+        self.train_metrics.update('d_out_fake', d_out_g.numpy().mean())
+        del d_gz, d_out_g
+        gc.collect()
+
         return g_loss.item()
 
     @abstractmethod
@@ -180,9 +190,10 @@ class BaseGANTrainer:
             'state_dict': self.model.state_dict(),
             'optimizer_G': self.optimizer_G.state_dict(),
             'optimizer_D': self.optimizer_D.state_dict(),
+            'augment': self.augment.state_dict() if self.augment else None,
             'config': self.config
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        filename = str(self.checkpoint_dir) + f'/{epoch}.pth'.zfill(4)
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
 
@@ -216,6 +227,13 @@ class BaseGANTrainer:
         else:
             self.optimizer_D.load_state_dict(checkpoint['optimizer_D'])
 
+        # load augmentation state from checkpoint
+        if checkpoint['config']['augment'] != self.config['augment']:
+            self.logger.warning("Warning: Augmentation type given in config file is different from that of checkpoint. "
+                                "Augmentation not being resumed.")
+        if self.augment:
+            self.augment.load_state_dict(checkpoint['augment'])
+
         self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     def _valid_epoch(self, epoch):
@@ -231,18 +249,28 @@ class BaseGANTrainer:
                 fake_imgs = self.model.generator(noise)
                 self.writer.set_step(epoch, 'valid')
                 if self.writer.name == "tensorboard":
-                    self.writer.add_image('fake', make_grid(fake_imgs.cpu(), nrow=8, normalize=True))
+                    self.writer.add_image('fake', make_grid(fake_imgs, nrow=8, normalize=True))
                 else:
-                    images = wandb.Image(make_grid(fake_imgs.cpu()[:32], nrow=8))
+                    images = wandb.Image(make_grid(fake_imgs[:32], nrow=8))
                     self.writer.log({'fake': images}, step=None)
+                    
+                    del images
+
+                del noise, fake_imgs
+                gc.collect()
+
             # Add 32 real images to tensorboard
             real_imgs, _ = next(iter(self.data_loader))
             self.writer.set_step(epoch, 'valid')
             if self.writer.name == "tensorboard":
-                self.writer.add_image('real', make_grid(real_imgs.cpu()[:32], nrow=8, normalize=True))
+                self.writer.add_image('real', make_grid(real_imgs[:32], nrow=8, normalize=True))
             else:
-                images = wandb.Image(make_grid(real_imgs.cpu()[:32], nrow=8))
+                images = wandb.Image(make_grid(real_imgs[:32], nrow=8))
                 self.writer.log({'real': images}, step=None)
+                del images
+
+            del real_imgs
+            gc.collect()
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'

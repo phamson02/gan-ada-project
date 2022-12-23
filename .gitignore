@@ -114,3 +114,5 @@ __MACOSX/
 test*
 
 datasets*
+checkpoints*
+*.json

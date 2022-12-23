@@ -28,11 +28,11 @@ class ConfigParser:
         exper_name = self.config['name']
         if run_id is None: # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
-        self._save_dir = save_dir / 'models' / exper_name / run_id
-        self._log_dir = save_dir / 'log' / exper_name / run_id
+        self._save_dir = save_dir / 'models' / exper_name
+        self._log_dir = save_dir / 'log' / exper_name
 
         # make directory for saving checkpoints and log.
-        exist_ok = run_id == ''
+        exist_ok = True
         self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
         self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
 
@@ -61,7 +61,12 @@ class ConfigParser:
             os.environ["CUDA_VISIBLE_DEVICES"] = args.device
         if args.resume is not None:
             resume = Path(args.resume)
-            cfg_fname = resume.parent / 'config.json'
+
+            # load config file from checkpoint if not specified
+            if args.config:
+                cfg_fname = Path(args.config)
+            else:
+                cfg_fname = resume.parent / 'config.json'
         else:
             msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
             assert args.config is not None, msg_no_cfg
