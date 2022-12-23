@@ -29,7 +29,7 @@ class Ada(BAug.AugmentPipe):
                                                  (1000 * self.ada_kimg), 0., 1.)))
 
     def update_lambda(self, lambda_t):
-        self.lambda_t.data = torch.cat((self.lambda_t.data, lambda_t), 0)
+        self.lambda_t.data = torch.cat((self.lambda_t.data, lambda_t.to(self.lambda_t.device).reshape(1,)), 0)
 
     def reset_lambda(self):
         self.lambda_t.data = torch.zeros((1,))
