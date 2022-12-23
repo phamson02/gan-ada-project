@@ -58,7 +58,7 @@ def main(config: ConfigParser, args):
         model.to(device)
         model.generator.eval()
 
-        latent_dim = config['arch']['args']['latent_dim']
+        latent_dim = model.latent_dim
 
         # generate images
         with torch.no_grad():
