@@ -163,7 +163,7 @@ class FastGANTrainer(BaseGANTrainer):
                         del images
                         del rec_img_all, rec_img_small, rec_img_part
 
-            if self.iters % (self.save_interval * 50) == 0 or epoch == self.epochs:
+            if self.iters % (self.save_interval * 50) == 0:
                 self._save_checkpoint(epoch)
 
             del d_loss, g_loss
@@ -195,6 +195,9 @@ class FastGANTrainer(BaseGANTrainer):
             # print logged informations to the screen
             for key, value in log.items():
                 self.logger.info('    {:15s}: {}'.format(str(key), value))
+
+            if epoch == self.epochs:
+                self._save_checkpoint(epoch)
 
         if self.writer is not None and self.writer.name == "wandb":
             self.writer.writer.finish()
