@@ -65,7 +65,8 @@ def main(config: ConfigParser, args):
             for i in tqdm(range(config['eval']['n_sample']//config['eval']['batch_size'])):
                 noise = torch.randn(config['eval']['batch_size'], latent_dim).to(device)
                 generated_imgs = model.generator(noise)
-
+                if len(generated_imgs) > 1 and generated_imgs[0].size() != generated_imgs[1].size():
+                    generated_imgs = generated_imgs[0]
                 for j, g_img in enumerate(generated_imgs):
                     vutils.save_image(g_img.add(1).mul(0.5), 
                         os.path.join(config['eval']['save_dir'], '%d.png'%(i*config['eval']['batch_size']+j)))#, normalize=True, range=(-1,1))
