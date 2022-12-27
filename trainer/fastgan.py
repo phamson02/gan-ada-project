@@ -152,12 +152,12 @@ class FastGANTrainer(BaseGANTrainer):
                         self.train_metrics.add_image('Image128', make_grid(torch.cat([
                             F.interpolate(real_img, 128),
                             rec_img_all, rec_img_small,
-                            rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4, normalize=True))
+                            rec_img_part], dim=1).reshape(-1, 3, 128, 128)[:12], nrow=4, normalize=True))
                     else:
                         images = wandb.Image(make_grid(torch.cat([
                             F.interpolate(real_img, 128),
                             rec_img_all, rec_img_small,
-                            rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4))
+                            rec_img_part], dim=1).reshape(-1, 3, 128, 128)[:12], nrow=4))
                         self.writer.log({'Image128': images}, step=None)
 
                         del images
