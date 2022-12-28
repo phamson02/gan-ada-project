@@ -8,7 +8,7 @@ import model.models as module_arch
 from parse_config import ConfigParser
 import glob
 from utils.fid_score import *
-
+import shutil
 import os
 import csv
 import gc
@@ -74,6 +74,7 @@ def main(config: ConfigParser, args):
                 gc.collect()
 
         fid_value = calculate_fid_given_paths((config['eval']['save_dir'], args.calculated_stats), batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
+
         print(fid_value, ckpt)
         with open(f"./{model_name}-fid.csv", "a") as f:
             writer = csv.writer(f)
@@ -81,6 +82,10 @@ def main(config: ConfigParser, args):
 
         if args.clear_dir and i != len(ckpts)-1:
             os.remove(ckpt)
+
+    if args.clear_generated:
+        shutil.rmtree(config['eval']['save_dir'])
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generating images from trained GAN model')
