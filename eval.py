@@ -99,7 +99,9 @@ if __name__ == '__main__':
     parser.add_argument('-cs', '--calculated_stats', default="None", type=str,
                         help="path to precalculated stats")
     parser.add_argument('-clr', "--clear_dir", default=False, action="store_true",
-                        help="whether or not cleaning the whole model's checkpoints dir except for the lastest checkpoint after calculation")        
+                        help="whether or not cleaning the whole model's checkpoints dir except for the lastest checkpoint after calculation")
+    parser.add_argument('-cgm', "--clear_generated", default=False, action="store_true",
+                        help="whether or not cleaning the generated images after calculation")
     args = parser.parse_args()
     # custom cli options to modify configuration from default values given in json file.
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
