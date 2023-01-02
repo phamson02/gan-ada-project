@@ -186,7 +186,13 @@ python train.py --resume path/to/checkpoint
 
 ### Evaluating
 
-Compute FID scores of each saved checkpoint of a model by:
+Compute statistics of experimental dataset for FID score calculation by:
+
+```
+!python dataset_stats.py -nm <output-npz-file-name> -p <path-to-data-dir> -pr <data-portion-taken-into-calculation>
+```
+
+Compute FID scores on generated images of each saved checkpoint of a model by:
 
 ```
 python eval.py -c <path-to-config-file> -r <path-to-checkpoints-dir> -cs <path-to-calculated-stats-file>
