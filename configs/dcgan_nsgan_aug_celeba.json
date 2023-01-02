@@ -1,0 +1,102 @@
+{
+    "name": "dcgan_nsgan_aug_celeba0.3_bs64",
+    "n_gpu": 1,
+  
+    "arch": {
+      "type": "DCGAN64",
+      "args": {
+        "latent_dim": 128
+      }
+    },
+    "data_loader": {
+      "type": "CelebA64DataLoader",
+      "args": {
+        "data_dir": "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba",
+        "batch_size": 128,
+        "shuffle": true,
+        "num_workers": 0,
+          "train_portion": 0.3
+      }
+    },
+  
+    "optimizer_G": {
+      "type": "Adam",
+      "args": {
+        "lr": 2e-4,
+        "weight_decay": 0,
+        "amsgrad": false,
+        "betas": [0.5, 0.999]
+      }
+    },
+    "optimizer_D": {
+      "type": "Adam",
+      "args": {
+        "lr": 2e-4,
+        "weight_decay": 0,
+        "amsgrad": false,
+        "betas": [0.5, 0.999]
+      }
+    },
+    "loss": "adversarial_loss",
+    "metrics": [],
+    "lr_scheduler_G": {
+      "type": "StepLR",
+      "args": {
+        "step_size": 1,
+        "gamma": 0.99
+      }
+    },
+    "lr_scheduler_D": {
+      "type": "StepLR",
+      "args": {
+        "step_size": 1,
+        "gamma": 0.99
+      }
+    },
+    "trainer": {
+      "type": "GANTrainer",
+  
+      "epochs": 200,
+  
+      "save_dir": "saved/",
+      "save_period": 5,
+      "verbosity": 1,
+  
+      "visual_tool": "wandb",
+      "__comment_1.1": "torch.utils.tensorboard",
+      "__comment_1.2": "tensorboardX",
+      "__comment_1.3": "wandb",
+      "__comment_1.4": "None",
+      "api_key_file": "./init/wandb-api-key-file",
+      "project": "gan-ada",
+      "entity": "gan-augment-project",
+      "name": "test_1",
+      "__comment_2.1": "Set name for one running"
+    },
+    "eval": {
+      "save_dir": "saved/generated",
+      "n_sample": 50000,
+      "batch_size": 64
+    },
+    "augment": {
+        "type": "Ada",
+      "args": {
+        "ada_kimg": 500,
+        "ada_target":0.6,
+        "xflip": 1,
+        "rotate90": 1,
+        "xint": 1,
+        "scale":1,
+        "aniso":1,
+        "xfrac":1,
+        "lumaflip":1,
+        "hue":1,
+        "saturation": 1,
+        "brightness": 1,
+        "contrast": 1,
+        "cutout": 1
+      }
+    
+      }
+  
+  }
