@@ -71,7 +71,17 @@ gan-ada-project/
 
 ## Usage
 
-Choose a config file from `configs/` and run: `python train.py -c configs/<name-of-config-file>.json`
+Install the required packages:
+
+```
+pip install -r requirements.txt
+```
+
+Choose a config file from `configs/` and run:
+
+```
+python train.py --config configs/<config_file>
+```
 
 ### Config file format
 
