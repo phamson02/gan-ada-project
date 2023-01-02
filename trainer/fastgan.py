@@ -16,7 +16,7 @@ class FastGANTrainer(BaseGANTrainer):
         super().__init__(model, criterion, optimizer_G, optimizer_D, config, device,
                          data_loader, augment, lr_scheduler_G, lr_scheduler_D, len_epoch)
         self.avg_param_G = copy_G_params(model.generator)
-        self.fixed_noise = torch.randn(8, self.model.generator.latent_dim).to(self.device)
+        self.fixed_noise = self._sample_noise(batch_size=12)
         self.save_interval = config["trainer"]["save_interval"]
 
     def init_lpips(self):
@@ -152,18 +152,18 @@ class FastGANTrainer(BaseGANTrainer):
                         self.train_metrics.add_image('Image128', make_grid(torch.cat([
                             F.interpolate(real_img, 128),
                             rec_img_all, rec_img_small,
-                            rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4, normalize=True))
+                            rec_img_part], dim=1).reshape(-1, 3, 128, 128)[:12], nrow=4, normalize=True))
                     else:
                         images = wandb.Image(make_grid(torch.cat([
                             F.interpolate(real_img, 128),
                             rec_img_all, rec_img_small,
-                            rec_img_part], dim=1).reshape(-1, 3, 128, 128), nrow=4))
+                            rec_img_part], dim=1).reshape(-1, 3, 128, 128)[:12], nrow=4))
                         self.writer.log({'Image128': images}, step=None)
 
                         del images
                         del rec_img_all, rec_img_small, rec_img_part
 
-            if self.iters % (self.save_interval * 50) == 0 or epoch == self.epochs:
+            if self.iters % (self.save_interval * 50) == 0:
                 self._save_checkpoint(epoch)
 
             del d_loss, g_loss
@@ -195,6 +195,9 @@ class FastGANTrainer(BaseGANTrainer):
             # print logged informations to the screen
             for key, value in log.items():
                 self.logger.info('    {:15s}: {}'.format(str(key), value))
+
+            if epoch == self.epochs:
+                self._save_checkpoint(epoch)
 
         if self.writer is not None and self.writer.name == "wandb":
             self.writer.writer.finish()
@@ -250,10 +253,13 @@ class FastGANTrainer(BaseGANTrainer):
         state = {
             'arch': arch,
             'epoch': epoch,
+            'iter': self.iters,
             'g_ema': self.avg_param_G,
             'state_dict': self.model.state_dict(),
             'optimizer_G': self.optimizer_G.state_dict(),
             'optimizer_D': self.optimizer_D.state_dict(),
+            'lr_scheduler_G': self.lr_scheduler_G.state_dict(),
+            'lr_scheduler_D': self.lr_scheduler_D.state_dict(),
             'augment': self.augment.state_dict() if self.augment else None,
             'config': self.config
         }
@@ -272,6 +278,8 @@ class FastGANTrainer(BaseGANTrainer):
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint['epoch'] + 1
         self.avg_param_G = checkpoint['g_ema']
+        self.iters = checkpoint['iter']
+
         # load architecture params from checkpoint.
         if checkpoint['config']['arch'] != self.config['arch']:
             self.logger.warning("Warning: Architecture configuration given in config file is different from that of "
@@ -290,6 +298,21 @@ class FastGANTrainer(BaseGANTrainer):
                                 "Optimizer parameters not being resumed.")
         else:
             self.optimizer_D.load_state_dict(checkpoint['optimizer_D'])
+
+        # load learning rate scheduler state from checkpoint only when lr scheduler type is not changed.
+        if checkpoint['config']['lr_scheduler_G']['type'] != self.config['lr_scheduler_G']['type']:
+            self.logger.warning(
+                "Warning: Lr_scheduler_G type given in config file is different from that of checkpoint. "
+                "Lr scheduler parameters not being resumed.")
+        else:
+            self.lr_scheduler_G.load_state_dict(checkpoint['lr_scheduler_G'])
+
+        if checkpoint['config']['lr_scheduler_D']['type'] != self.config['lr_scheduler_D']['type']:
+            self.logger.warning(
+                "Warning: Lr_scheduler_D type given in config file is different from that of checkpoint. "
+                "Lr scheduler parameters not being resumed.")
+        else:
+            self.lr_scheduler_D.load_state_dict(checkpoint['lr_scheduler_D'])
 
         # load augmentation state from checkpoint
         if checkpoint['config']['augment'] != self.config['augment']:

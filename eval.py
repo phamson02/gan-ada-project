@@ -8,7 +8,7 @@ import model.models as module_arch
 from parse_config import ConfigParser
 import glob
 from utils.fid_score import *
-
+import shutil
 import os
 import csv
 import gc
@@ -58,14 +58,15 @@ def main(config: ConfigParser, args):
         model.to(device)
         model.generator.eval()
 
-        latent_dim = config['arch']['args']['latent_dim']
+        latent_dim = model.latent_dim
 
         # generate images
         with torch.no_grad():
             for i in tqdm(range(config['eval']['n_sample']//config['eval']['batch_size'])):
                 noise = torch.randn(config['eval']['batch_size'], latent_dim).to(device)
                 generated_imgs = model.generator(noise)
-
+                if len(generated_imgs) > 1 and generated_imgs[0].size() != generated_imgs[1].size():
+                    generated_imgs = generated_imgs[0]
                 for j, g_img in enumerate(generated_imgs):
                     vutils.save_image(g_img.add(1).mul(0.5), 
                         os.path.join(config['eval']['save_dir'], '%d.png'%(i*config['eval']['batch_size']+j)))#, normalize=True, range=(-1,1))
@@ -73,6 +74,7 @@ def main(config: ConfigParser, args):
                 gc.collect()
 
         fid_value = calculate_fid_given_paths((config['eval']['save_dir'], args.calculated_stats), batch_size=config['eval']['batch_size'], device=device, dims=2048, num_workers=1)
+
         print(fid_value, ckpt)
         with open(f"./{model_name}-fid.csv", "a") as f:
             writer = csv.writer(f)
@@ -80,6 +82,10 @@ def main(config: ConfigParser, args):
 
         if args.clear_dir and i != len(ckpts)-1:
             os.remove(ckpt)
+
+    if args.clear_generated:
+        shutil.rmtree(config['eval']['save_dir'])
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generating images from trained GAN model')
@@ -93,7 +99,9 @@ if __name__ == '__main__':
     parser.add_argument('-cs', '--calculated_stats', default="None", type=str,
                         help="path to precalculated stats")
     parser.add_argument('-clr', "--clear_dir", default=False, action="store_true",
-                        help="whether or not cleaning the whole model's checkpoints dir except for the lastest checkpoint after calculation")        
+                        help="whether or not cleaning the whole model's checkpoints dir except for the lastest checkpoint after calculation")
+    parser.add_argument('-cgm', "--clear_generated", default=False, action="store_true",
+                        help="whether or not cleaning the generated images after calculation")
     args = parser.parse_args()
     # custom cli options to modify configuration from default values given in json file.
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')

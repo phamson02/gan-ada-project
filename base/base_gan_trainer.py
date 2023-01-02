@@ -61,12 +61,13 @@ class BaseGANTrainer:
         else:
             raise ImportError("Visualization tool isn't exists, please refer to comment 1.* "
                               "to choose appropriate module")
+        self.iters = 0
+        self.lambda_t = list()
+
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
         self.train_metrics = MetricTracker('g_loss', 'd_loss', 'D(G(z))', 'D(x)', 'p', 'd_out_real', 'd_out_fake',
                                            writer=self.writer)
-        self.iters = 0
-        self.lambda_t = list()
 
     def _sample_noise(self, batch_size):
         return torch.randn(batch_size, self.model.latent_dim).to(self.device)
@@ -187,9 +188,12 @@ class BaseGANTrainer:
         state = {
             'arch': arch,
             'epoch': epoch,
+            'iter': self.iters,
             'state_dict': self.model.state_dict(),
             'optimizer_G': self.optimizer_G.state_dict(),
             'optimizer_D': self.optimizer_D.state_dict(),
+            'lr_scheduler_G': self.lr_scheduler_G.state_dict(),
+            'lr_scheduler_D': self.lr_scheduler_D.state_dict(),
             'augment': self.augment.state_dict() if self.augment else None,
             'config': self.config
         }
@@ -207,6 +211,7 @@ class BaseGANTrainer:
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint['epoch'] + 1
+        self.iters = checkpoint['iter']
 
         # load architecture params from checkpoint.
         if checkpoint['config']['arch'] != self.config['arch']:
@@ -226,6 +231,21 @@ class BaseGANTrainer:
                                 "Optimizer parameters not being resumed.")
         else:
             self.optimizer_D.load_state_dict(checkpoint['optimizer_D'])
+
+        # load learning rate scheduler state from checkpoint only when lr scheduler type is not changed.
+        if checkpoint['config']['lr_scheduler_G']['type'] != self.config['lr_scheduler_G']['type']:
+            self.logger.warning(
+                "Warning: Lr_scheduler_G type given in config file is different from that of checkpoint. "
+                "Lr scheduler parameters not being resumed.")
+        else:
+            self.lr_scheduler_G.load_state_dict(checkpoint['lr_scheduler_G'])
+
+        if checkpoint['config']['lr_scheduler_D']['type'] != self.config['lr_scheduler_D']['type']:
+            self.logger.warning(
+                "Warning: Lr_scheduler_D type given in config file is different from that of checkpoint. "
+                "Lr scheduler parameters not being resumed.")
+        else:
+            self.lr_scheduler_D.load_state_dict(checkpoint['lr_scheduler_D'])
 
         # load augmentation state from checkpoint
         if checkpoint['config']['augment'] != self.config['augment']:
