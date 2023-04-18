@@ -5,6 +5,12 @@ This is the source code for the project "Data Augmentation for Generative Advers
 In this project, we will investigate the effect of data augmentation in training GANs
 by experimenting it over a various methods to see whether and how it works.
 
+Team members:
+- [Nguyễn Lân Cường](https://github.com/cuonglannguyen)
+- [Nguyễn Công Đạt](https://github.com/katD2707)
+- [Phạm Quang Hiếu](https://github.com/phamquang-hieu)
+- [Phạm Tiến Sơn](https://github.com/phamson02)
+
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 ordere  dList=false} -->
 
 <!-- code_chunk_output -->
