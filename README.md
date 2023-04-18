@@ -11,18 +11,19 @@ Team members:
 - [Phạm Quang Hiếu](https://github.com/phamquang-hieu)
 - [Phạm Tiến Sơn](https://github.com/phamson02)
 
+## Table of contents
+
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 ordere  dList=false} -->
 
 <!-- code_chunk_output -->
 
-- [Data Augmentation for Generative Adversarial Networks](#data-augmentation-for-generative-adversarial-networks)
-  - [Project Structure](#project-structure)
-  - [Usage](#usage)
-    - [Config file format](#config-file-format)
-    - [Using config files](#using-config-files)
-    - [Resuming from checkpoints](#resuming-from-checkpoints)
-    - [Evaluating](#evaluating)
-  - [Acknowledgements](#acknowledgements)
+- [Project Structure](#project-structure)
+- [Usage](#usage)
+  - [Config file format](#config-file-format)
+  - [Using config files](#using-config-files)
+  - [Resuming from checkpoints](#resuming-from-checkpoints)
+  - [Evaluating](#evaluating)
+- [Acknowledgements](#acknowledgements)
 
 <!-- /code_chunk_output -->
 
